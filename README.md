@@ -1,117 +1,127 @@
-# Around the Grounds - FIFA World Cup 2026 Edition
+# Around the Grounds, FIFA World Cup 2026 Edition
 
-A static GitHub Pages app for the SMC staff FIFA World Cup 2026 prediction competition.
+Static GitHub Pages app for the SMC staff FIFA World Cup 2026 prediction competition.
 
 ## Files
 
-- `index.html`, page structure
-- `styles.css`, full responsive styling with light and dark mode
-- `data.js`, regions, passcodes, Firebase config, and fallback match list
-- `app.js`, picks, standings, scoring, admin tools, Firebase sync, import and export
+- `index.html`, app layout
+- `styles.css`, mobile-first light and dark theme
+- `data.js`, competition settings, Firebase config, regions, passcodes, starter matches
+- `app.js`, Firebase sync, scoring, picks, imports, exports, audit, history, bracket view
 
-## GitHub Pages setup
+## Firebase
 
-1. Create a new GitHub repository.
-2. Upload all files from this folder to the repository root.
-3. Go to Settings, Pages.
-4. Set source to `Deploy from a branch`.
-5. Select `main` and `/root`.
-6. Save.
+The supplied Firebase config is already installed in `data.js` and Firebase is enabled.
 
-## Firebase setup
+Firestore document used by the app:
 
-The app uses Cloud Firestore when Firebase is enabled. Firestore supports document writes with `setDoc()` and live document listeners with `onSnapshot()`, which lets the public page update when picks, games, or scores change.
+```text
+competitions/worldcup2026
+```
 
-1. Create a Firebase project.
-2. Add a Web App inside the Firebase console.
-3. Copy the Firebase web config.
-4. Open `data.js`.
-5. Replace the placeholder values inside `firebase.config`.
-6. Change `enabled: false` to `enabled: true`.
-7. In Firebase, create a Cloud Firestore database.
-8. Start in test mode for setup, then replace rules before public use.
+Subcollections used by the app:
 
-Suggested starter rules for this passcode-only app:
+```text
+competitions/worldcup2026/audit
+competitions/worldcup2026/history
+```
 
-```txt
+## Passcodes
+
+Super admin:
+
+```text
+ATG2026ADMIN
+```
+
+Regional passcodes:
+
+```text
+Steve & Josh: SJ2026
+Southeast: SE2026
+Texas: TX2026
+Midwest: MW2026
+Mid-Atlantic: MA2026
+```
+
+## Manual game import
+
+Super admin can paste JSON or CSV.
+
+Required fields:
+
+```text
+match id, game date, game time eastern, home team, away team, venue
+```
+
+Recommended CSV headers:
+
+```csv
+matchId,date,timeET,homeTeam,awayTeam,venue,stage,group
+m001,2026-06-11,15:00,Mexico,South Africa,Estadio Azteca,group,Group A
+```
+
+JSON format:
+
+```json
+[
+  {
+    "matchId": "m001",
+    "date": "2026-06-11",
+    "timeET": "15:00",
+    "homeTeam": "Mexico",
+    "awayTeam": "South Africa",
+    "venue": "Estadio Azteca",
+    "stage": "group",
+    "group": "Group A"
+  }
+]
+```
+
+## Added features
+
+- Firebase live sync
+- Local fallback if Firebase fails
+- Manual game import by JSON or CSV
+- CSV file uploader
+- Match lockout at kickoff time, Eastern Time
+- Super admin unlock override by match
+- Admin override for any regional pick
+- Results entry and automatic standings recalculation
+- Audit log for Firebase changes
+- Leaderboard history snapshots
+- Daily match dashboard
+- Public standings and match pick view
+- Correct pick highlighting
+- Dark and light theme
+- CSV export for Excel
+- Browser print workflow for PDF
+- Knockout bracket visualization
+
+## Firestore rules for internal testing
+
+These rules allow public reads and writes. Use them only for a private internal contest.
+
+```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /around-the-grounds/world-cup-2026 {
+    match /competitions/{competitionId} {
+      allow read, write: if true;
+    }
+    match /competitions/{competitionId}/{subcollection}/{documentId} {
       allow read, write: if true;
     }
   }
 }
 ```
 
-This keeps setup simple, but it is not strict security. The app uses passcodes in front-end code. Anyone with code access could find them. For stronger security, add Firebase Authentication and user-based Firestore rules.
+For production, use Firebase Authentication and protect admin writes with custom claims.
 
-## Passcodes
+## GitHub Pages deploy
 
-Super admin:
-
-`SMC2026ADMIN`
-
-Regional passcodes:
-
-- Steve & Josh: `STEVEJOSH2026`
-- Southeast: `SOUTHEAST2026`
-- Texas: `TEXAS2026`
-- Midwest: `MIDWEST2026`
-- Mid-Atlantic: `MIDATLANTIC2026`
-
-Change passcodes in `data.js` before publishing.
-
-## Manual game import
-
-Super admin can import games from the admin panel.
-
-Paste a JSON array with these fields:
-
-```json
-[
-  {
-    "id": "m001",
-    "date": "2026-06-11",
-    "time": "15:00",
-    "stage": "group",
-    "group": "Group A",
-    "home": "Mexico",
-    "away": "South Africa",
-    "venue": "Estadio Azteca, Mexico City"
-  }
-]
-```
-
-Required fields:
-
-- `id` or `matchId`
-- `date`, format `YYYY-MM-DD`
-- `time`, format `HH:MM` eastern
-- `home`
-- `away`
-- `venue`
-
-Optional fields:
-
-- `stage`, use `group` or `knockout`
-- `group`, use group name or round name
-
-When Firebase is enabled, imported games sync to all users.
-
-## Scoring
-
-- Correct non-draw pick: 3 points
-- Correct draw pick: 1 point
-- Incorrect pick: 0 points
-- Goals for and goals against come from the team selected
-- Draw picks earn 0 goals for and 0 goals against
-- Tiebreakers: points, goal difference, goals scored
-
-## Data storage
-
-When Firebase is enabled, picks, results, and imported games save to this Firestore document:
-
-`around-the-grounds/world-cup-2026`
-
-When Firebase is disabled or unavailable, the app falls back to browser `localStorage`.
+1. Upload all files to a GitHub repository.
+2. Open Settings.
+3. Open Pages.
+4. Set source to the main branch and root folder.
+5. Save.

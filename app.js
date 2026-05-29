@@ -1,545 +1,359 @@
-const STORAGE_KEY = 'aroundTheGrounds2026';
-const config = window.ATG_CONFIG;
-const firebaseSettings = config.firebase || {};
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
 
-let state = loadState();
-let activeRegionId = null;
-let isSuperAdmin = false;
-let cloud = null;
-let cloudReady = false;
-let applyingCloudSnapshot = false;
+const CONFIG = window.ATG_CONFIG;
+const $ = (id) => document.getElementById(id);
+const todayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+const nowEtMs = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })).getTime();
 
-const els = {
-  themeToggle: document.getElementById('themeToggle'),
-  adminOpen: document.getElementById('adminOpen'),
-  adminDialog: document.getElementById('adminDialog'),
-  passcodeInput: document.getElementById('passcodeInput'),
-  unlockBtn: document.getElementById('unlockBtn'),
-  loginError: document.getElementById('loginError'),
-  loginPanel: document.getElementById('loginPanel'),
-  entryPanel: document.getElementById('entryPanel'),
-  activeRole: document.getElementById('activeRole'),
-  lockBtn: document.getElementById('lockBtn'),
-  regionalEntry: document.getElementById('regionalEntry'),
-  superAdmin: document.getElementById('superAdmin'),
-  pickFormList: document.getElementById('pickFormList'),
-  resultFormList: document.getElementById('resultFormList'),
-  savePicksBtn: document.getElementById('savePicksBtn'),
-  saveResultsBtn: document.getElementById('saveResultsBtn'),
-  exportBtn: document.getElementById('exportBtn'),
-  importBtn: document.getElementById('importBtn'),
-  clearBtn: document.getElementById('clearBtn'),
-  importText: document.getElementById('importText'),
-  gameImportText: document.getElementById('gameImportText'),
-  importGamesBtn: document.getElementById('importGamesBtn'),
-  exportGamesBtn: document.getElementById('exportGamesBtn'),
-  firebaseStatus: document.getElementById('firebaseStatus'),
-  standingsBody: document.querySelector('#standingsTable tbody'),
-  matchesGrid: document.getElementById('matchesGrid'),
-  dateFilter: document.getElementById('dateFilter'),
-  stageFilter: document.getElementById('stageFilter'),
-  viewFilter: document.getElementById('viewFilter'),
-  resetFilters: document.getElementById('resetFilters'),
-  refreshBtn: document.getElementById('refreshBtn'),
-  lastUpdated: document.getElementById('lastUpdated')
+const DEFAULT_STATE = {
+  matches: CONFIG.matches,
+  picks: {},
+  results: {},
+  overrides: {},
+  updatedAt: null,
+  updatedBy: 'System'
 };
 
-init();
+let state = structuredClone(DEFAULT_STATE);
+let role = null;
+let db = null;
+let stateRef = null;
+let auditRef = null;
+let historyRef = null;
+let useFirebase = false;
+let unsub = null;
 
-async function init() {
-  const savedTheme = localStorage.getItem('atgTheme') || 'light';
-  document.body.classList.toggle('dark', savedTheme === 'dark');
-  els.themeToggle.textContent = savedTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
-
-  els.dateFilter.value = new Date().toISOString().slice(0, 10);
-  bindEvents();
-  render();
-  await initFirebase();
-}
-
-function bindEvents() {
-  els.themeToggle.addEventListener('click', () => {
-    const isDark = document.body.classList.toggle('dark');
-    localStorage.setItem('atgTheme', isDark ? 'dark' : 'light');
-    els.themeToggle.textContent = isDark ? 'Light Mode' : 'Dark Mode';
-  });
-
-  els.adminOpen.addEventListener('click', () => els.adminDialog.showModal());
-  els.unlockBtn.addEventListener('click', unlock);
-  els.passcodeInput.addEventListener('keydown', event => { if (event.key === 'Enter') unlock(); });
-  els.lockBtn.addEventListener('click', lockAdmin);
-  els.savePicksBtn.addEventListener('click', saveRegionalPicks);
-  els.saveResultsBtn.addEventListener('click', saveResults);
-  els.exportBtn.addEventListener('click', exportData);
-  els.importBtn.addEventListener('click', importData);
-  els.clearBtn.addEventListener('click', clearData);
-  els.importGamesBtn.addEventListener('click', importGames);
-  els.exportGamesBtn.addEventListener('click', exportGamesTemplate);
-  els.resetFilters.addEventListener('click', resetFilters);
-  els.refreshBtn.addEventListener('click', render);
-  [els.dateFilter, els.stageFilter, els.viewFilter].forEach(el => el.addEventListener('change', render));
-}
-
-function defaultState() {
-  return { picks: {}, results: {}, matches: config.matches || [], updatedAt: null };
-}
-
-function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return defaultState();
-  try {
-    const parsed = JSON.parse(saved);
-    return {
-      picks: parsed.picks || {},
-      results: parsed.results || {},
-      matches: Array.isArray(parsed.matches) && parsed.matches.length ? parsed.matches : config.matches || [],
-      updatedAt: parsed.updatedAt || null
-    };
-  } catch {
-    return defaultState();
+function initFirebase(){
+  try{
+    if(!CONFIG.firebase?.enabled) throw new Error('Firebase disabled');
+    const app = initializeApp(CONFIG.firebase.config);
+    db = getFirestore(app);
+    stateRef = doc(db, ...CONFIG.firebase.statePath);
+    auditRef = collection(db, ...CONFIG.firebase.auditCollection);
+    historyRef = collection(db, ...CONFIG.firebase.historyCollection);
+    useFirebase = true;
+    $('firebaseStatus').textContent = 'Firebase live';
+    $('firebaseStatus').classList.add('win');
+  }catch(err){
+    useFirebase = false;
+    $('firebaseStatus').textContent = 'Local fallback';
   }
 }
 
-async function initFirebase() {
-  updateFirebaseStatus('Local mode');
-  if (!firebaseSettings.enabled) return;
-
-  try {
-    const [{ initializeApp }, firestore] = await Promise.all([
-      import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js'),
-      import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js')
-    ]);
-
-    const app = initializeApp(firebaseSettings.config);
-    const db = firestore.getFirestore(app);
-    const stateRef = firestore.doc(db, firebaseSettings.collection || 'around-the-grounds', firebaseSettings.document || 'world-cup-2026');
-
-    cloud = {
-      save: data => firestore.setDoc(stateRef, sanitizeForCloud(data), { merge: true }),
-      clear: () => firestore.setDoc(stateRef, defaultState(), { merge: false })
-    };
-
-    firestore.onSnapshot(stateRef, snapshot => {
-      if (!snapshot.exists()) {
-        cloudReady = true;
-        cloud.save(state).catch(handleCloudError);
-        updateFirebaseStatus('Firebase connected');
-        return;
-      }
-
-      applyingCloudSnapshot = true;
-      const data = snapshot.data();
-      state = normalizeCloudState(data);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      applyingCloudSnapshot = false;
-      cloudReady = true;
-      updateFirebaseStatus('Firebase connected');
-      render();
-    }, error => handleCloudError(error));
-  } catch (error) {
-    handleCloudError(error);
-  }
-}
-
-function normalizeCloudState(data) {
-  return {
-    picks: data?.picks || {},
-    results: data?.results || {},
-    matches: Array.isArray(data?.matches) && data.matches.length ? data.matches : config.matches || [],
-    updatedAt: data?.updatedAt || null
-  };
-}
-
-function sanitizeForCloud(data) {
-  return {
-    picks: data.picks || {},
-    results: data.results || {},
-    matches: Array.isArray(data.matches) ? data.matches : [],
-    updatedAt: data.updatedAt || new Date().toISOString()
-  };
-}
-
-function updateFirebaseStatus(message) {
-  if (els.firebaseStatus) els.firebaseStatus.textContent = message;
-}
-
-function handleCloudError(error) {
-  console.error(error);
-  cloudReady = false;
-  updateFirebaseStatus('Firebase not connected. Using local mode.');
-}
-
-async function persist() {
-  state.updatedAt = new Date().toISOString();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  render();
-
-  if (cloud && !applyingCloudSnapshot) {
-    try {
-      updateFirebaseStatus('Saving to Firebase...');
-      await cloud.save(state);
-      updateFirebaseStatus('Firebase connected');
-    } catch (error) {
-      handleCloudError(error);
-    }
-  }
-}
-
-function getMatches() {
-  return Array.isArray(state.matches) && state.matches.length ? state.matches : config.matches || [];
-}
-
-function resetFilters() {
-  els.dateFilter.value = new Date().toISOString().slice(0, 10);
-  els.stageFilter.value = 'all';
-  els.viewFilter.value = 'today';
-  render();
-}
-
-function unlock() {
-  const code = els.passcodeInput.value.trim();
-  els.loginError.textContent = '';
-
-  if (code === config.passcodes.superAdmin) {
-    isSuperAdmin = true;
-    activeRegionId = null;
-    showAdminPanels('Super Admin');
-    return;
-  }
-
-  const region = config.regions.find(item => config.passcodes.regions[item.id] === code);
-  if (region) {
-    isSuperAdmin = false;
-    activeRegionId = region.id;
-    showAdminPanels(region.name);
-    return;
-  }
-
-  els.loginError.textContent = 'Passcode not recognized.';
-}
-
-function showAdminPanels(label) {
-  els.loginPanel.classList.add('hidden');
-  els.entryPanel.classList.remove('hidden');
-  els.activeRole.textContent = `Unlocked: ${label}`;
-  els.regionalEntry.classList.toggle('hidden', isSuperAdmin);
-  els.superAdmin.classList.toggle('hidden', !isSuperAdmin);
-  if (isSuperAdmin) renderResultForms();
-  if (activeRegionId) renderPickForms(activeRegionId);
-}
-
-function lockAdmin() {
-  activeRegionId = null;
-  isSuperAdmin = false;
-  els.passcodeInput.value = '';
-  els.loginPanel.classList.remove('hidden');
-  els.entryPanel.classList.add('hidden');
-  els.regionalEntry.classList.add('hidden');
-  els.superAdmin.classList.add('hidden');
-}
-
-function render() {
-  renderStandings();
-  renderMatches();
-  els.lastUpdated.textContent = state.updatedAt ? `Updated ${formatDateTime(state.updatedAt)}` : 'No saved picks yet';
-  if (isSuperAdmin) renderResultForms();
-  if (activeRegionId) renderPickForms(activeRegionId);
-}
-
-function getFilteredMatches() {
-  const selectedDate = els.dateFilter.value;
-  const stage = els.stageFilter.value;
-  const view = els.viewFilter.value;
-  const today = new Date().toISOString().slice(0, 10);
-
-  return getMatches().filter(match => {
-    const result = state.results[match.id];
-    const isComplete = result && Number.isFinite(Number(result.homeGoals)) && Number.isFinite(Number(result.awayGoals));
-    if (stage !== 'all' && match.stage !== stage) return false;
-    if (view === 'today' && match.date !== selectedDate) return false;
-    if (view === 'completed' && !isComplete) return false;
-    if (view === 'upcoming' && (isComplete || match.date < today)) return false;
-    return true;
-  }).sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-}
-
-function renderStandings() {
-  const rows = calculateStandings();
-  els.standingsBody.innerHTML = rows.map((row, index) => `
-    <tr>
-      <td><span class="rank-pill">${index + 1}</span></td>
-      <td><strong>${escapeHtml(row.name)}</strong><br><span class="muted">${escapeHtml(row.members.join(', '))}</span></td>
-      <td>${row.played}</td>
-      <td>${row.wins}</td>
-      <td>${row.draws}</td>
-      <td>${row.losses}</td>
-      <td class="wide-only">${row.gf}</td>
-      <td class="wide-only">${row.ga}</td>
-      <td>${row.gd}</td>
-      <td><strong>${row.points}</strong></td>
-      <td class="wide-only">${renderForm(row.form)}</td>
-    </tr>
-  `).join('');
-}
-
-function calculateStandings() {
-  return config.regions.map(region => {
-    const row = { ...region, played: 0, wins: 0, draws: 0, losses: 0, gf: 0, ga: 0, points: 0, form: [] };
-
-    getMatches().forEach(match => {
-      const pick = state.picks[region.id]?.[match.id];
-      const result = state.results[match.id];
-      if (!pick || !result || result.homeGoals === '' || result.awayGoals === '') return;
-
-      const homeGoals = Number(result.homeGoals);
-      const awayGoals = Number(result.awayGoals);
-      if (!Number.isFinite(homeGoals) || !Number.isFinite(awayGoals)) return;
-
-      const outcome = getOutcome(homeGoals, awayGoals);
-      row.played += 1;
-
-      if (pick === outcome) {
-        if (outcome === 'draw') {
-          row.draws += 1;
-          row.points += 1;
-          row.form.push('D');
-        } else {
-          row.wins += 1;
-          row.points += 3;
-          row.form.push('W');
-        }
-      } else {
-        row.losses += 1;
-        row.form.push('L');
-      }
-
-      if (pick === 'home') {
-        row.gf += homeGoals;
-        row.ga += awayGoals;
-      } else if (pick === 'away') {
-        row.gf += awayGoals;
-        row.ga += homeGoals;
+async function loadState(){
+  if(useFirebase){
+    const snap = await getDoc(stateRef);
+    if(snap.exists()) state = normalizeState(snap.data());
+    else await saveState('System', 'Initialized competition state');
+    unsub = onSnapshot(stateRef, (docSnap) => {
+      if(docSnap.exists()){
+        state = normalizeState(docSnap.data());
+        renderAll();
       }
     });
-
-    row.gd = row.gf - row.ga;
-    row.form = row.form.slice(-5);
-    return row;
-  }).sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf || a.name.localeCompare(b.name));
-}
-
-function renderForm(form) {
-  const padded = [...form];
-  while (padded.length < 5) padded.unshift('-');
-  return `<div class="form-row">${padded.map(item => `<span class="form-pill form-${item.toLowerCase() === '-' ? 'na' : item.toLowerCase()}">${item}</span>`).join('')}</div>`;
-}
-
-function renderMatches() {
-  const matches = getFilteredMatches();
-  if (!matches.length) {
-    els.matchesGrid.innerHTML = '<p class="muted">No matches found for this view.</p>';
-    return;
+    await loadAudit();
+    await loadHistory();
+  }else{
+    const saved = localStorage.getItem('atg-state');
+    if(saved) state = normalizeState(JSON.parse(saved));
   }
-
-  els.matchesGrid.innerHTML = matches.map(match => {
-    const result = state.results[match.id];
-    const hasScore = result && result.homeGoals !== '' && result.awayGoals !== '';
-    const outcome = hasScore ? getOutcome(Number(result.homeGoals), Number(result.awayGoals)) : null;
-    return `
-      <article class="match-card">
-        <div class="match-top">
-          <span>${formatDate(match.date)} | ${escapeHtml(match.time)} ET</span>
-          <span>${escapeHtml(match.group || stageLabel(match.stage))}</span>
-        </div>
-        <div class="match-teams">
-          <span>${escapeHtml(match.home)}</span>
-          <span class="score">${hasScore ? `${result.homeGoals} - ${result.awayGoals}` : 'vs'}</span>
-          <span>${escapeHtml(match.away)}</span>
-        </div>
-        <p class="muted">${escapeHtml(match.venue)}</p>
-        <div class="pick-row">
-          ${config.regions.map(region => renderPickChip(region, match, outcome)).join('')}
-        </div>
-      </article>
-    `;
-  }).join('');
+  renderAll();
 }
 
-function renderPickChip(region, match, outcome) {
-  const pick = state.picks[region.id]?.[match.id] || 'none';
-  const label = pickLabel(pick, match);
-  const correct = outcome && pick === outcome;
-  return `
-    <div class="pick-chip ${correct ? 'correct' : ''}">
-      <span class="pick-label">${escapeHtml(region.name)}</span>
-      <span class="outcome">${escapeHtml(label)}${correct ? ' ✓' : ''}</span>
-    </div>
-  `;
-}
-
-function renderPickForms(regionId) {
-  const matches = getFilteredMatches();
-  els.pickFormList.innerHTML = matches.map(match => {
-    const current = state.picks[regionId]?.[match.id] || '';
-    return `
-      <div class="admin-item">
-        <strong>${formatDate(match.date)} | ${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</strong>
-        <span class="muted">${escapeHtml(match.group || stageLabel(match.stage))} | ${escapeHtml(match.time)} ET | ${escapeHtml(match.venue)}</span>
-        <div class="pick-controls" data-match-id="${escapeHtml(match.id)}">
-          ${radio(match.id, 'home', current, match.home)}
-          ${match.stage === 'group' ? radio(match.id, 'draw', current, 'Draw') : ''}
-          ${radio(match.id, 'away', current, match.away)}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function radio(matchId, value, current, label) {
-  return `<label><input type="radio" name="pick-${escapeHtml(matchId)}" value="${value}" ${current === value ? 'checked' : ''}> ${escapeHtml(label)}</label>`;
-}
-
-function saveRegionalPicks() {
-  if (!activeRegionId) return;
-  state.picks[activeRegionId] = state.picks[activeRegionId] || {};
-  getFilteredMatches().forEach(match => {
-    const selected = document.querySelector(`input[name="pick-${cssEscape(match.id)}"]:checked`);
-    if (selected) state.picks[activeRegionId][match.id] = selected.value;
-  });
-  persist();
-}
-
-function renderResultForms() {
-  const matches = getFilteredMatches();
-  els.resultFormList.innerHTML = matches.map(match => {
-    const result = state.results[match.id] || { homeGoals: '', awayGoals: '' };
-    return `
-      <div class="admin-item">
-        <strong>${formatDate(match.date)} | ${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</strong>
-        <span class="muted">${escapeHtml(match.group || stageLabel(match.stage))} | ${escapeHtml(match.time)} ET | ${escapeHtml(match.venue)}</span>
-        <div class="score-controls" data-match-id="${escapeHtml(match.id)}">
-          <label>${escapeHtml(match.home)}<input type="number" min="0" inputmode="numeric" data-score="home" value="${escapeHtml(String(result.homeGoals ?? ''))}"></label>
-          <label>${escapeHtml(match.away)}<input type="number" min="0" inputmode="numeric" data-score="away" value="${escapeHtml(String(result.awayGoals ?? ''))}"></label>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function saveResults() {
-  getFilteredMatches().forEach(match => {
-    const homeInput = document.querySelector(`[data-match-id="${cssEscape(match.id)}"] input[data-score="home"]`);
-    const awayInput = document.querySelector(`[data-match-id="${cssEscape(match.id)}"] input[data-score="away"]`);
-    if (!homeInput || !awayInput) return;
-    state.results[match.id] = { homeGoals: homeInput.value, awayGoals: awayInput.value };
-  });
-  persist();
-}
-
-function importGames() {
-  try {
-    const rows = JSON.parse(els.gameImportText.value);
-    if (!Array.isArray(rows)) throw new Error('Game import must be an array.');
-    const matches = rows.map(normalizeMatch);
-    state.matches = matches;
-    removeOrphanedData(matches);
-    persist();
-    alert(`${matches.length} matches imported.`);
-  } catch (error) {
-    alert(`Game import failed. ${error.message}`);
-  }
-}
-
-function normalizeMatch(row, index) {
-  const match = {
-    id: String(row.id || row.matchId || row.match_id || '').trim(),
-    date: String(row.date || row.gameDate || row.game_date || '').trim(),
-    time: String(row.time || row.gameTime || row.game_time || '').trim(),
-    stage: String(row.stage || 'group').trim().toLowerCase(),
-    group: String(row.group || row.round || '').trim(),
-    home: String(row.home || row.homeTeam || row.home_team || '').trim(),
-    away: String(row.away || row.awayTeam || row.away_team || '').trim(),
-    venue: String(row.venue || '').trim()
+function normalizeState(input){
+  return {
+    ...DEFAULT_STATE,
+    ...input,
+    matches: Array.isArray(input.matches) ? input.matches : CONFIG.matches,
+    picks: input.picks || {},
+    results: input.results || {},
+    overrides: input.overrides || {}
   };
-
-  if (!match.id) match.id = `match-${index + 1}`;
-  if (!match.date || !/^\d{4}-\d{2}-\d{2}$/.test(match.date)) throw new Error(`Match ${match.id} needs a date in YYYY-MM-DD format.`);
-  if (!match.time || !/^\d{1,2}:\d{2}$/.test(match.time)) throw new Error(`Match ${match.id} needs a time in HH:MM eastern format.`);
-  if (!match.home || !match.away) throw new Error(`Match ${match.id} needs home and away teams.`);
-  if (!match.venue) throw new Error(`Match ${match.id} needs a venue.`);
-  if (!['group', 'knockout'].includes(match.stage)) match.stage = 'group';
-  if (!match.group) match.group = match.stage === 'group' ? 'Group Stage' : 'Knockout';
-  return match;
 }
 
-function removeOrphanedData(matches) {
-  const validIds = new Set(matches.map(match => match.id));
-  Object.keys(state.results).forEach(matchId => { if (!validIds.has(matchId)) delete state.results[matchId]; });
-  Object.values(state.picks).forEach(regionPicks => {
-    Object.keys(regionPicks).forEach(matchId => { if (!validIds.has(matchId)) delete regionPicks[matchId]; });
-  });
-}
-
-function exportGamesTemplate() {
-  const data = JSON.stringify(getMatches(), null, 2);
-  navigator.clipboard?.writeText(data);
-  els.gameImportText.value = data;
-}
-
-function exportData() {
-  const data = JSON.stringify(state, null, 2);
-  navigator.clipboard?.writeText(data);
-  els.importText.value = data;
-}
-
-function importData() {
-  try {
-    const data = JSON.parse(els.importText.value);
-    state.picks = data.picks || {};
-    state.results = data.results || {};
-    state.matches = Array.isArray(data.matches) && data.matches.length ? data.matches.map(normalizeMatch) : getMatches();
-    persist();
-  } catch (error) {
-    alert(`Import failed. ${error.message}`);
+async function saveState(actor='System', action='Updated data'){
+  state.updatedAt = new Date().toISOString();
+  state.updatedBy = actor;
+  if(useFirebase){
+    await setDoc(stateRef, state, { merge: false });
+    await addAudit(actor, action);
+    await addHistory(actor);
+  }else{
+    localStorage.setItem('atg-state', JSON.stringify(state));
   }
+  renderAll();
 }
 
-function clearData() {
-  if (!confirm('Clear all picks, scores, and imported matches?')) return;
-  state = defaultState();
-  persist();
+async function addAudit(actor, action){
+  if(!useFirebase) return;
+  await addDoc(auditRef, { actor, action, createdAt: serverTimestamp(), snapshotTime: new Date().toISOString() });
+  await loadAudit();
 }
 
-function getOutcome(homeGoals, awayGoals) {
-  if (homeGoals > awayGoals) return 'home';
-  if (awayGoals > homeGoals) return 'away';
+async function addHistory(actor){
+  if(!useFirebase) return;
+  const standings = calculateStandings();
+  await addDoc(historyRef, { actor, createdAt: serverTimestamp(), snapshotTime: new Date().toISOString(), standings });
+  await loadHistory();
+}
+
+async function loadAudit(){
+  if(!useFirebase) return;
+  const q = query(auditRef, orderBy('createdAt', 'desc'), limit(30));
+  const snaps = await getDocs(q);
+  $('auditLog').innerHTML = snaps.docs.map(d => {
+    const x = d.data();
+    return `<div class="audit-entry"><strong>${escapeHtml(x.actor || 'System')}</strong><br>${escapeHtml(x.action || '')}<br><span class="muted">${formatDateTime(x.snapshotTime)}</span></div>`;
+  }).join('') || '<p class="muted">No audit entries yet.</p>';
+}
+
+async function loadHistory(){
+  if(!useFirebase) return;
+  const q = query(historyRef, orderBy('createdAt', 'desc'), limit(15));
+  const snaps = await getDocs(q);
+  $('historyLog').innerHTML = snaps.docs.map(d => {
+    const x = d.data();
+    const leader = (x.standings || [])[0];
+    return `<div class="audit-entry"><strong>${leader ? escapeHtml(leader.region.name) : 'No leader'}</strong> led with ${leader ? leader.pts : 0} pts<br><span class="muted">${formatDateTime(x.snapshotTime)} by ${escapeHtml(x.actor || 'System')}</span></div>`;
+  }).join('') || '<p class="muted">No history yet.</p>';
+}
+
+function getResult(match){ return state.results[match.id] || {}; }
+function matchStatus(match){
+  const r = getResult(match);
+  if(r.status) return r.status;
+  if(r.homeGoals !== undefined && r.homeGoals !== null && r.awayGoals !== undefined && r.awayGoals !== null) return 'completed';
+  return isLocked(match) ? 'locked' : 'scheduled';
+}
+function kickoffMs(match){ return new Date(`${match.date}T${match.time || match.timeET || '00:00'}:00-04:00`).getTime(); }
+function isLocked(match){ return state.overrides?.[match.id]?.unlocked ? false : nowEtMs() >= kickoffMs(match); }
+function isCompleted(match){ return matchStatus(match) === 'completed'; }
+function outcome(match){
+  const r = getResult(match);
+  const hg = Number(r.homeGoals), ag = Number(r.awayGoals);
+  if(!Number.isFinite(hg) || !Number.isFinite(ag)) return null;
+  if(hg > ag) return 'home';
+  if(ag > hg) return 'away';
   return 'draw';
 }
-
-function pickLabel(pick, match) {
-  if (pick === 'home') return match.home;
-  if (pick === 'away') return match.away;
-  if (pick === 'draw') return 'Draw';
-  return 'No pick';
+function pickGoals(match, pick){
+  const r = getResult(match);
+  const hg = Number(r.homeGoals), ag = Number(r.awayGoals);
+  if(!Number.isFinite(hg) || !Number.isFinite(ag) || pick === 'draw' || !pick) return { gf:0, ga:0 };
+  return pick === 'home' ? { gf:hg, ga:ag } : { gf:ag, ga:hg };
 }
 
-function stageLabel(stage) {
-  return stage === 'knockout' ? 'Knockout' : 'Group Stage';
+function calculateStandings(){
+  const rows = CONFIG.regions.map(region => ({ region, p:0,w:0,d:0,l:0,gf:0,ga:0,gd:0,pts:0,form:[] }));
+  const completed = state.matches.filter(isCompleted).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+  for(const match of completed){
+    const out = outcome(match);
+    if(!out) continue;
+    for(const row of rows){
+      const pick = state.picks[row.region.id]?.[match.id];
+      if(!pick) continue;
+      row.p++;
+      const goals = pickGoals(match, pick);
+      row.gf += goals.gf; row.ga += goals.ga;
+      if(pick === out){
+        if(out === 'draw'){ row.d++; row.pts += 1; row.form.push('D'); }
+        else { row.w++; row.pts += 3; row.form.push('W'); }
+      }else{ row.l++; row.form.push('L'); }
+    }
+  }
+  rows.forEach(r => r.gd = r.gf - r.ga);
+  rows.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.region.name.localeCompare(b.region.name));
+  return rows;
 }
 
-function formatDate(dateString) {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(`${dateString}T12:00:00`));
+function renderAll(){ renderStandings(); renderMatches(); renderAdminForms(); renderDashboard(); renderBracket(); }
+
+function renderStandings(){
+  const standings = calculateStandings();
+  $('standingsTable').querySelector('tbody').innerHTML = standings.map((r,i)=>`
+    <tr><td>${i+1}</td><td><strong>${escapeHtml(r.region.name)}</strong><br><span class="muted">${r.region.members.join(', ')}</span></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="wide-only">${r.gf}</td><td class="wide-only">${r.ga}</td><td>${r.gd}</td><td><strong>${r.pts}</strong></td><td class="wide-only">${renderForm(r.form)}</td></tr>`).join('');
+  $('lastUpdated').textContent = state.updatedAt ? `Updated ${formatDateTime(state.updatedAt)} by ${state.updatedBy || 'System'}` : '';
+}
+function renderForm(form){ return form.slice(-5).map(v=>`<span class="form-pill ${v==='W'?'win':v==='D'?'draw':'loss'}">${v}</span>`).join(' ') || '<span class="muted">None</span>'; }
+
+function filteredMatches(){
+  const date = $('dateFilter').value;
+  const stage = $('stageFilter').value;
+  const view = $('viewFilter').value;
+  return state.matches.filter(m => {
+    if(stage !== 'all' && m.stage !== stage) return false;
+    if(date && m.date !== date) return false;
+    if(view === 'today' && m.date !== todayIso()) return false;
+    if(view === 'completed' && !isCompleted(m)) return false;
+    if(view === 'upcoming' && isCompleted(m)) return false;
+    return true;
+  }).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
 }
 
-function formatDateTime(dateString) {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(dateString));
+function renderMatches(){
+  const matches = filteredMatches();
+  $('matchesGrid').innerHTML = matches.map(match => {
+    const r = getResult(match); const out = outcome(match);
+    const score = isCompleted(match) ? `<span class="score">${r.homeGoals} - ${r.awayGoals}</span>` : `<span class="status-pill">${matchStatus(match)}</span>`;
+    const picks = CONFIG.regions.map(region => {
+      const pick = state.picks[region.id]?.[match.id];
+      const correct = out && pick === out ? 'correct' : '';
+      return `<div class="pick-row ${correct}"><strong>${escapeHtml(region.name)}</strong><span class="pick-pill">${pickLabel(match,pick)}</span></div>`;
+    }).join('');
+    return `<article class="match-card ${isLocked(match)?'locked':''}"><div class="match-top"><span>${formatDate(match.date)} | ${escapeHtml(match.time || match.timeET || '')} ET</span><span>${escapeHtml(match.group || match.stage || '')}</span></div><div class="teams">${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</div><div>${score}</div><p class="muted">${escapeHtml(match.venue || 'Venue TBD')}</p><div class="picks-grid">${picks}</div></article>`;
+  }).join('') || '<p class="muted">No matches match your filters.</p>';
+}
+function pickLabel(match,pick){ if(!pick) return 'No pick'; if(pick==='home') return match.home; if(pick==='away') return match.away; return 'Draw'; }
+
+function renderDashboard(){
+  const today = todayIso();
+  $('dashToday').textContent = state.matches.filter(m=>m.date===today).length;
+  $('dashCompleted').textContent = state.matches.filter(isCompleted).length;
+  $('dashPicks').textContent = Object.values(state.picks).reduce((n,p)=> n + Object.keys(p||{}).length, 0);
+  const leader = calculateStandings()[0];
+  $('dashLeader').textContent = leader ? `${leader.region.name} (${leader.pts})` : 'TBD';
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
+function renderBracket(){
+  const rounds = {};
+  state.matches.filter(m=>m.stage==='knockout').forEach(m => { const key = m.group || 'Knockout'; (rounds[key] ||= []).push(m); });
+  $('bracketGrid').innerHTML = Object.keys(rounds).length ? Object.entries(rounds).map(([round,matches])=>`<div class="bracket-round"><h3>${escapeHtml(round)}</h3>${matches.map(m=>`<div class="bracket-match"><strong>${escapeHtml(m.home)}</strong><br>vs<br><strong>${escapeHtml(m.away)}</strong><br><span class="muted">${formatDate(m.date)} ${escapeHtml(m.time||'')} ET</span></div>`).join('')}</div>`).join('') : '<p class="muted">Import knockout matches to display the bracket.</p>';
 }
 
-function cssEscape(value) {
-  if (window.CSS && CSS.escape) return CSS.escape(value);
-  return String(value).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+function renderAdminForms(){
+  if(!role) return;
+  if(role.type === 'region') renderPickForm();
+  if(role.type === 'admin'){ renderResultForm(); renderOverrideForm(); }
 }
+function renderPickForm(){
+  $('pickFormList').innerHTML = state.matches.sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)).map(match => {
+    const current = state.picks[role.regionId]?.[match.id] || '';
+    const disabled = isLocked(match) ? 'disabled' : '';
+    const draw = match.stage === 'group' ? '<option value="draw">Draw</option>' : '';
+    return `<div class="admin-item"><h5>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><p class="muted">${formatDate(match.date)} ${escapeHtml(match.time||'')} ET | ${escapeHtml(match.venue||'')}</p><select data-pick-match="${match.id}" ${disabled}><option value="">No pick</option><option value="home" ${current==='home'?'selected':''}>${escapeHtml(match.home)}</option>${draw}<option value="away" ${current==='away'?'selected':''}>${escapeHtml(match.away)}</option></select>${disabled?'<p class="muted">Locked at kickoff.</p>':''}</div>`;
+  }).join('');
+}
+function renderResultForm(){
+  $('resultFormList').innerHTML = state.matches.map(match => {
+    const r = getResult(match);
+    return `<div class="admin-item"><h5>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><div class="field-grid"><label>Home Goals<input type="number" min="0" data-result-home="${match.id}" value="${r.homeGoals ?? ''}"></label><label>Away Goals<input type="number" min="0" data-result-away="${match.id}" value="${r.awayGoals ?? ''}"></label><label>Status<select data-result-status="${match.id}"><option value="scheduled" ${matchStatus(match)==='scheduled'?'selected':''}>Scheduled</option><option value="locked" ${matchStatus(match)==='locked'?'selected':''}>Locked</option><option value="completed" ${matchStatus(match)==='completed'?'selected':''}>Completed</option></select></label><label>Stage<select data-stage="${match.id}"><option value="group" ${match.stage==='group'?'selected':''}>Group</option><option value="knockout" ${match.stage==='knockout'?'selected':''}>Knockout</option></select></label></div></div>`;
+  }).join('');
+}
+function renderOverrideForm(){
+  $('overrideList').innerHTML = state.matches.map(match => {
+    const picks = CONFIG.regions.map(region => {
+      const cur = state.picks[region.id]?.[match.id] || '';
+      const draw = match.stage === 'group' ? '<option value="draw">Draw</option>' : '';
+      return `<label>${escapeHtml(region.name)}<select data-override-pick="${region.id}|${match.id}"><option value="">No pick</option><option value="home" ${cur==='home'?'selected':''}>${escapeHtml(match.home)}</option>${draw}<option value="away" ${cur==='away'?'selected':''}>${escapeHtml(match.away)}</option></select></label>`;
+    }).join('');
+    const unlocked = state.overrides?.[match.id]?.unlocked;
+    return `<div class="admin-item"><h5>${escapeHtml(match.id)} | ${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><div class="field-grid two">${picks}</div><label><input type="checkbox" data-unlock-match="${match.id}" ${unlocked?'checked':''}> Keep entry unlocked after kickoff</label></div>`;
+  }).join('');
+}
+
+async function unlock(){
+  const code = $('passcodeInput').value.trim();
+  if(code === CONFIG.passcodes.superAdmin){ role = { type:'admin', name:'Super Admin' }; }
+  else{
+    const regionId = Object.entries(CONFIG.passcodes.regions).find(([,pass])=>pass===code)?.[0];
+    if(regionId) role = { type:'region', regionId, name: CONFIG.regions.find(r=>r.id===regionId).name };
+  }
+  if(!role){ $('loginError').textContent = 'Invalid passcode.'; return; }
+  $('loginPanel').classList.add('hidden'); $('entryPanel').classList.remove('hidden'); $('activeRole').textContent = `Unlocked: ${role.name}`;
+  $('regionalEntry').classList.toggle('hidden', role.type !== 'region'); $('superAdmin').classList.toggle('hidden', role.type !== 'admin');
+  renderAdminForms();
+}
+
+async function savePicks(){
+  const picks = { ...(state.picks[role.regionId] || {}) };
+  document.querySelectorAll('[data-pick-match]').forEach(sel => { if(!sel.disabled){ const v = sel.value; if(v) picks[sel.dataset.pickMatch] = v; else delete picks[sel.dataset.pickMatch]; } });
+  state.picks[role.regionId] = picks;
+  await saveState(role.name, `Saved picks for ${role.name}`);
+}
+async function saveResults(){
+  document.querySelectorAll('[data-result-home]').forEach(input => {
+    const id = input.dataset.resultHome;
+    const home = input.value === '' ? null : Number(input.value);
+    const awayInput = document.querySelector(`[data-result-away="${id}"]`);
+    const statusSel = document.querySelector(`[data-result-status="${id}"]`);
+    const stageSel = document.querySelector(`[data-stage="${id}"]`);
+    const away = awayInput.value === '' ? null : Number(awayInput.value);
+    state.results[id] = { homeGoals: home, awayGoals: away, status: statusSel.value };
+    const match = state.matches.find(m=>m.id===id); if(match) match.stage = stageSel.value;
+  });
+  await saveState(role.name, 'Saved match results and recalculated standings');
+}
+async function saveOverrides(){
+  document.querySelectorAll('[data-override-pick]').forEach(sel => {
+    const [regionId, matchId] = sel.dataset.overridePick.split('|');
+    state.picks[regionId] ||= {};
+    if(sel.value) state.picks[regionId][matchId] = sel.value; else delete state.picks[regionId][matchId];
+  });
+  document.querySelectorAll('[data-unlock-match]').forEach(chk => { state.overrides[chk.dataset.unlockMatch] = { unlocked: chk.checked }; });
+  await saveState(role.name, 'Saved admin overrides');
+}
+
+function parseGames(raw){
+  const text = raw.trim();
+  if(!text) return [];
+  if(text.startsWith('[')) return JSON.parse(text).map(normalizeGame);
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  const headers = lines.shift().split(',').map(h=>h.trim().toLowerCase());
+  return lines.map(line => {
+    const cols = splitCsv(line); const obj = {};
+    headers.forEach((h,i)=>obj[h]=cols[i]?.trim());
+    return normalizeGame(obj);
+  });
+}
+function splitCsv(line){ return line.match(/("[^"]*"|[^,]+)/g)?.map(v=>v.replace(/^"|"$/g,'')) || []; }
+function normalizeGame(g){
+  const id = g.matchId || g.matchid || g.id || g['match id'];
+  const date = g.date || g.gameDate || g.gamedate || g['game date'];
+  const time = g.timeET || g.timeEt || g.time || g['game time eastern'] || g['game time'];
+  const home = g.homeTeam || g.hometeam || g.home || g['home team'];
+  const away = g.awayTeam || g.awayteam || g.away || g['away team'];
+  const venue = g.venue || '';
+  if(!id || !date || !time || !home || !away) throw new Error('Each game needs match id, game date, game time eastern, home team, and away team.');
+  return { id:String(id), date, time, stage:g.stage || 'group', group:g.group || '', home, away, venue };
+}
+async function importGames(){
+  try{
+    const games = parseGames($('gameImportText').value);
+    const existing = new Map(state.matches.map(m=>[m.id,m]));
+    games.forEach(g=>existing.set(g.id, { ...existing.get(g.id), ...g }));
+    state.matches = [...existing.values()].sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+    await saveState(role.name, `Imported ${games.length} matches`);
+  }catch(err){ alert(err.message); }
+}
+
+function exportCurrentGames(){ download('atg-games.csv', toCsv(state.matches.map(m=>({matchId:m.id,date:m.date,timeET:m.time,homeTeam:m.home,awayTeam:m.away,venue:m.venue,stage:m.stage,group:m.group})))); }
+function exportStandingsCsv(){ download('atg-standings.csv', toCsv(calculateStandings().map((r,i)=>({Rank:i+1,Region:r.region.name,P:r.p,W:r.w,D:r.d,L:r.l,GF:r.gf,GA:r.ga,GD:r.gd,Pts:r.pts,Form:r.form.slice(-5).join('')})))); }
+function toCsv(rows){ if(!rows.length) return ''; const h=Object.keys(rows[0]); return [h.join(','),...rows.map(r=>h.map(k=>`"${String(r[k]??'').replaceAll('"','""')}"`).join(','))].join('\n'); }
+function download(name, content){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:'text/csv'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+
+function exportSave(){ $('importText').value = JSON.stringify(state,null,2); }
+async function importSave(){ try{ state = normalizeState(JSON.parse($('importText').value)); await saveState(role.name, 'Imported full save data'); }catch(err){ alert('Invalid JSON.'); } }
+async function clearData(){ if(confirm('Clear all shared data and reset to defaults?')){ state=structuredClone(DEFAULT_STATE); await saveState(role.name, 'Cleared all shared data'); } }
+
+function wireEvents(){
+  $('fifaLink').href = CONFIG.fifaSourceUrl;
+  $('themeToggle').onclick = () => { const d=document.documentElement; const dark=d.dataset.theme!=='dark'; d.dataset.theme=dark?'dark':'light'; localStorage.setItem('atg-theme', d.dataset.theme); $('themeToggle').textContent = dark ? 'Light Mode' : 'Dark Mode'; };
+  document.documentElement.dataset.theme = localStorage.getItem('atg-theme') || 'light';
+  $('themeToggle').textContent = document.documentElement.dataset.theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+  $('dateFilter').value = todayIso();
+  ['dateFilter','stageFilter','viewFilter'].forEach(id=>$(id).onchange=renderMatches);
+  $('resetFilters').onclick=()=>{ $('dateFilter').value=todayIso(); $('stageFilter').value='all'; $('viewFilter').value='today'; renderMatches(); };
+  $('refreshBtn').onclick=renderAll; $('adminOpen').onclick=()=>$('adminDialog').showModal(); $('unlockBtn').onclick=unlock; $('lockBtn').onclick=()=>location.reload();
+  $('savePicksBtn').onclick=savePicks; $('saveResultsBtn').onclick=saveResults; $('saveOverridesBtn').onclick=saveOverrides;
+  $('importGamesBtn').onclick=importGames; $('exportGamesBtn').onclick=exportCurrentGames; $('exportBtn').onclick=exportSave; $('importBtn').onclick=importSave; $('clearBtn').onclick=clearData;
+  $('exportCsvBtn').onclick=exportStandingsCsv; $('printPdfBtn').onclick=()=>window.print();
+  $('csvFileInput').onchange = async e => { const file=e.target.files[0]; if(file) $('gameImportText').value = await file.text(); };
+  document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('.tab,.tab-panel').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); $(btn.dataset.tab).classList.add('active'); });
+}
+
+function formatDate(d){ return new Date(`${d}T12:00:00`).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function formatDateTime(d){ if(!d) return ''; return new Date(d).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'}); }
+function escapeHtml(s){ return String(s ?? '').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+wireEvents(); initFirebase(); loadState();
