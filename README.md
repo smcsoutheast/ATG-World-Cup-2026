@@ -125,3 +125,35 @@ For production, use Firebase Authentication and protect admin writes with custom
 3. Open Pages.
 4. Set source to the main branch and root folder.
 5. Save.
+
+## Sync fix in this version
+
+This update fixes two common test issues:
+
+1. The public page now defaults to all matches instead of today's matches. Future imported games will show right away.
+2. Firebase save errors now display an alert and a visible sync status. If Firestore rules block writes, the page will say Firebase save failed instead of appearing to save locally.
+
+## Required Firebase setup checklist
+
+1. Open Firebase Console.
+2. Open the `atg-world-cup-26` project.
+3. Go to Build, then Firestore Database.
+4. Create the database if it does not exist.
+5. Start in production or test mode.
+6. Open Rules.
+7. Paste the rules from `firestore.rules`.
+8. Publish.
+9. Reload the GitHub Pages site on both devices.
+10. Open Admin. The status should say Live sync active or Saved to Firebase.
+
+## Quick sync test
+
+1. On device one, open Admin.
+2. Enter the super admin passcode.
+3. Import one test game.
+4. Confirm the status says Saved to Firebase.
+5. On device two, reload the page.
+6. Clear the date filter or click Reset.
+7. The test game should appear.
+
+If device one says Firebase save failed, the issue is Firestore rules or the Firestore database has not been created yet.

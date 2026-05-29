@@ -24,6 +24,14 @@ let historyRef = null;
 let useFirebase = false;
 let unsub = null;
 
+function setSyncStatus(text, mode=''){
+  const el = $('firebaseStatus');
+  if(!el) return;
+  el.textContent = text;
+  el.classList.remove('win','loss','draw');
+  if(mode) el.classList.add(mode);
+}
+
 function initFirebase(){
   try{
     if(!CONFIG.firebase?.enabled) throw new Error('Firebase disabled');
@@ -33,27 +41,42 @@ function initFirebase(){
     auditRef = collection(db, ...CONFIG.firebase.auditCollection);
     historyRef = collection(db, ...CONFIG.firebase.historyCollection);
     useFirebase = true;
-    $('firebaseStatus').textContent = 'Firebase live';
-    $('firebaseStatus').classList.add('win');
+    setSyncStatus('Firebase connected', 'win');
   }catch(err){
     useFirebase = false;
-    $('firebaseStatus').textContent = 'Local fallback';
+    console.warn('Firebase startup failed:', err);
+    setSyncStatus('Local mode only', 'draw');
   }
 }
 
 async function loadState(){
   if(useFirebase){
-    const snap = await getDoc(stateRef);
-    if(snap.exists()) state = normalizeState(snap.data());
-    else await saveState('System', 'Initialized competition state');
-    unsub = onSnapshot(stateRef, (docSnap) => {
-      if(docSnap.exists()){
-        state = normalizeState(docSnap.data());
-        renderAll();
-      }
-    });
-    await loadAudit();
-    await loadHistory();
+    try{
+      setSyncStatus('Loading Firebase...', 'draw');
+      const snap = await getDoc(stateRef);
+      if(snap.exists()) state = normalizeState(snap.data());
+      else await saveState('System', 'Initialized competition state');
+      unsub = onSnapshot(stateRef, (docSnap) => {
+        if(docSnap.exists()){
+          state = normalizeState(docSnap.data());
+          setSyncStatus('Live sync active', 'win');
+          renderAll();
+        }
+      }, (err) => {
+        console.error('Firebase listener failed:', err);
+        setSyncStatus('Firebase read failed', 'loss');
+        alert('Firebase read failed. Check Firestore security rules and project settings.');
+      });
+      await loadAudit();
+      await loadHistory();
+    }catch(err){
+      console.error('Firebase load failed:', err);
+      useFirebase = false;
+      setSyncStatus('Firebase failed. Local only', 'loss');
+      alert('Firebase failed to load. Data will not sync across devices until Firestore rules and config are fixed.');
+      const saved = localStorage.getItem('atg-state');
+      if(saved) state = normalizeState(JSON.parse(saved));
+    }
   }else{
     const saved = localStorage.getItem('atg-state');
     if(saved) state = normalizeState(JSON.parse(saved));
@@ -76,11 +99,21 @@ async function saveState(actor='System', action='Updated data'){
   state.updatedAt = new Date().toISOString();
   state.updatedBy = actor;
   if(useFirebase){
-    await setDoc(stateRef, state, { merge: false });
-    await addAudit(actor, action);
-    await addHistory(actor);
+    try{
+      setSyncStatus('Saving to Firebase...', 'draw');
+      await setDoc(stateRef, state, { merge: false });
+      await addAudit(actor, action);
+      await addHistory(actor);
+      setSyncStatus('Saved to Firebase', 'win');
+    }catch(err){
+      console.error('Firebase save failed:', err);
+      setSyncStatus('Firebase save failed', 'loss');
+      alert('Firebase save failed. The change was not shared to other devices. Check Firestore security rules.');
+      throw err;
+    }
   }else{
     localStorage.setItem('atg-state', JSON.stringify(state));
+    setSyncStatus('Saved locally only', 'draw');
   }
   renderAll();
 }
@@ -324,6 +357,9 @@ async function importGames(){
     games.forEach(g=>existing.set(g.id, { ...existing.get(g.id), ...g }));
     state.matches = [...existing.values()].sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
     await saveState(role.name, `Imported ${games.length} matches`);
+    $('dateFilter').value = '';
+    $('viewFilter').value = 'all';
+    renderAll();
   }catch(err){ alert(err.message); }
 }
 
@@ -341,9 +377,10 @@ function wireEvents(){
   $('themeToggle').onclick = () => { const d=document.documentElement; const dark=d.dataset.theme!=='dark'; d.dataset.theme=dark?'dark':'light'; localStorage.setItem('atg-theme', d.dataset.theme); $('themeToggle').textContent = dark ? 'Light Mode' : 'Dark Mode'; };
   document.documentElement.dataset.theme = localStorage.getItem('atg-theme') || 'light';
   $('themeToggle').textContent = document.documentElement.dataset.theme === 'dark' ? 'Light Mode' : 'Dark Mode';
-  $('dateFilter').value = todayIso();
+  $('dateFilter').value = '';
+  $('viewFilter').value = 'all';
   ['dateFilter','stageFilter','viewFilter'].forEach(id=>$(id).onchange=renderMatches);
-  $('resetFilters').onclick=()=>{ $('dateFilter').value=todayIso(); $('stageFilter').value='all'; $('viewFilter').value='today'; renderMatches(); };
+  $('resetFilters').onclick=()=>{ $('dateFilter').value=''; $('stageFilter').value='all'; $('viewFilter').value='all'; renderMatches(); };
   $('refreshBtn').onclick=renderAll; $('adminOpen').onclick=()=>$('adminDialog').showModal(); $('unlockBtn').onclick=unlock; $('lockBtn').onclick=()=>location.reload();
   $('savePicksBtn').onclick=savePicks; $('saveResultsBtn').onclick=saveResults; $('saveOverridesBtn').onclick=saveOverrides;
   $('importGamesBtn').onclick=importGames; $('exportGamesBtn').onclick=exportCurrentGames; $('exportBtn').onclick=exportSave; $('importBtn').onclick=importSave; $('clearBtn').onclick=clearData;
