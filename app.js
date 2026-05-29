@@ -258,7 +258,7 @@ function renderMatches(){
       const correct = out && pick === out ? 'correct' : '';
       return `<div class="pick-row ${correct}"><strong>${escapeHtml(region.name)}</strong><span class="pick-pill">${pickLabel(match,pick)}</span></div>`;
     }).join('');
-    return `<article class="match-card ${isLocked(match)?'locked':''}"><div class="match-top"><span>${formatDate(match.date)} | ${escapeHtml(match.time || match.timeET || '')} ET</span><span>${escapeHtml(match.group || match.stage || '')}</span></div><div class="teams">${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</div><div>${score}</div><p class="muted">${escapeHtml(match.venue || 'Venue TBD')}</p><div class="picks-grid">${picks}</div></article>`;
+    return `<article class="match-card ${isLocked(match)?'locked':''}"><div class="match-top"><span>Match ${escapeHtml(match.matchNumber || match.id)} | ${formatDate(match.date)} | ${escapeHtml(match.time || match.timeET || '')} ET</span><span>${escapeHtml(match.group || match.stageLabel || match.stage || '')}</span></div><div class="teams"><span>${escapeHtml(match.home)}</span><span class="vs">vs</span><span>${escapeHtml(match.away)}</span></div><div>${score}</div><p class="muted">${escapeHtml(match.venue || 'Venue TBD')}</p><div class="picks-grid">${picks}</div></article>`;
   }).join('') || '<p class="muted">No matches match your filters.</p>';
 }
 function pickLabel(match,pick){ if(!pick) return 'No pick'; if(pick==='home') return match.home; if(pick==='away') return match.away; return 'Draw'; }
@@ -363,17 +363,44 @@ function parseGames(raw){
     return normalizeGame(obj);
   });
 }
-function splitCsv(line){ return line.match(/("[^"]*"|[^,]+)/g)?.map(v=>v.replace(/^"|"$/g,'')) || []; }
-function normalizeGame(g){
-  const id = g.matchId || g.matchid || g.id || g['match id'];
-  const date = g.date || g.gameDate || g.gamedate || g['game date'];
-  const time = g.timeET || g.timeEt || g.time || g['game time eastern'] || g['game time'];
-  const home = g.homeTeam || g.hometeam || g.home || g['home team'];
-  const away = g.awayTeam || g.awayteam || g.away || g['away team'];
-  const venue = g.venue || '';
-  if(!id || !date || !time || !home || !away) throw new Error('Each game needs match id, game date, game time eastern, home team, and away team.');
-  return { id:String(id), date, time, stage:g.stage || 'group', group:g.group || '', home, away, venue };
+function splitCsv(line){
+  const out = [];
+  let cur = '';
+  let quoted = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){
+      if(quoted && line[i+1] === '"'){ cur += '"'; i++; }
+      else quoted = !quoted;
+    }else if(ch === ',' && !quoted){
+      out.push(cur);
+      cur = '';
+    }else cur += ch;
+  }
+  out.push(cur);
+  return out.map(v=>v.trim());
 }
+function normalizeGame(g){
+  const id = g.matchId || g.matchid || g.match_number || g.matchnumber || g.id || g['match id'] || g['match number'];
+  const date = g.date || g.gameDate || g.gamedate || g['game date'];
+  const time = g.timeET || g.timeEt || g.time_et || g.time || g['game time eastern'] || g['game time'];
+  const home = g.homeTeam || g.hometeam || g.team_a || g.home || g['home team'];
+  const away = g.awayTeam || g.awayteam || g.team_b || g.away || g['away team'];
+  const venue = [g.venue, g.city, g.country].filter(Boolean).join(', ') || '';
+  const rawStage = g.stage || '';
+  const stage = String(rawStage).toLowerCase().startsWith('group') ? 'group' : (String(rawStage).toLowerCase() ? 'knockout' : 'group');
+  const group = g.group ? (stage === 'group' && !String(g.group).toLowerCase().startsWith('group') ? `Group ${g.group}` : g.group) : '';
+  if(!id || !date || !time || !home || !away) throw new Error('Each game needs match id, game date, game time eastern, home team, and away team.');
+  return { id:String(id), matchNumber:id, date, time, timeET:time, timeLocal:g.time_local || '', stage, stageLabel:rawStage, group, home, away, venue, city:g.city || '', country:g.country || '', status:g.status || '', source:g.source || '' };
+}
+async function loadDefaultSchedule(){
+  state.matches = structuredClone(CONFIG.matches).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+  await saveState(role.name, `Loaded bundled 104-match schedule`);
+  $('dateFilter').value = '';
+  $('viewFilter').value = 'all';
+  renderAll();
+}
+
 async function importGames(){
   try{
     const games = parseGames($('gameImportText').value);
@@ -398,6 +425,7 @@ async function clearData(){ if(confirm('Clear all shared data and reset to defau
 
 function wireEvents(){
   $('fifaLink').href = CONFIG.fifaSourceUrl;
+  if($('scheduleLink')) $('scheduleLink').href = CONFIG.scheduleSourceUrl || 'https://worldcup2026schedules.com/';
   $('themeToggle').onclick = () => { const d=document.documentElement; const dark=d.dataset.theme!=='dark'; d.dataset.theme=dark?'dark':'light'; localStorage.setItem('atg-theme', d.dataset.theme); $('themeToggle').textContent = dark ? 'Light Mode' : 'Dark Mode'; };
   document.documentElement.dataset.theme = localStorage.getItem('atg-theme') || 'light';
   $('themeToggle').textContent = document.documentElement.dataset.theme === 'dark' ? 'Light Mode' : 'Dark Mode';
@@ -407,7 +435,7 @@ function wireEvents(){
   $('resetFilters').onclick=()=>{ $('dateFilter').value=''; $('stageFilter').value='all'; $('viewFilter').value='all'; renderMatches(); };
   $('refreshBtn').onclick=renderAll; $('adminOpen').onclick=()=>$('adminDialog').showModal(); $('unlockBtn').onclick=unlock; $('lockBtn').onclick=()=>location.reload();
   $('savePicksBtn').onclick=savePicks; $('saveResultsBtn').onclick=saveResults; $('saveOverridesBtn').onclick=saveOverrides;
-  $('importGamesBtn').onclick=importGames; $('exportGamesBtn').onclick=exportCurrentGames; $('exportBtn').onclick=exportSave; $('importBtn').onclick=importSave; $('clearBtn').onclick=clearData;
+  $('loadDefaultScheduleBtn').onclick=loadDefaultSchedule; $('importGamesBtn').onclick=importGames; $('exportGamesBtn').onclick=exportCurrentGames; $('exportBtn').onclick=exportSave; $('importBtn').onclick=importSave; $('clearBtn').onclick=clearData;
   $('exportCsvBtn').onclick=exportStandingsCsv; $('printPdfBtn').onclick=()=>window.print();
   $('csvFileInput').onchange = async e => { const file=e.target.files[0]; if(file) $('gameImportText').value = await file.text(); };
   document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('.tab,.tab-panel').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); $(btn.dataset.tab).classList.add('active'); });

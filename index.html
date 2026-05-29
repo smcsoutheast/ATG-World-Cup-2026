@@ -27,7 +27,8 @@
         <p>Pick winners. Track points. Count goals from each pick. Follow the table all tournament.</p>
       </div>
       <div class="source-box">
-        <span>Official match source</span>
+        <span>Schedule source</span>
+        <a id="scheduleLink" href="#" target="_blank" rel="noopener">World Cup 2026 Schedules</a>
         <a id="fifaLink" href="#" target="_blank" rel="noopener">FIFA Scores & Fixtures</a>
       </div>
     </section>
@@ -73,7 +74,7 @@
         <h3>Super admin</h3>
         <div class="tabs"><button class="tab active" data-tab="scoresTab" type="button">Scores</button><button class="tab" data-tab="importTab" type="button">Import</button><button class="tab" data-tab="overrideTab" type="button">Override</button><button class="tab" data-tab="auditTab" type="button">Audit</button></div>
         <div id="scoresTab" class="tab-panel active"><h4>Match results</h4><div id="resultFormList" class="admin-list"></div><button id="saveResultsBtn" class="primary-btn" type="button">Save Results</button></div>
-        <div id="importTab" class="tab-panel"><h4>Manual game import</h4><p class="muted">Paste JSON or CSV. Required fields: match id, game date, game time eastern, home team, away team, venue.</p><textarea id="gameImportText" rows="9" placeholder="matchId,date,timeET,homeTeam,awayTeam,venue,stage,group"></textarea><input id="csvFileInput" type="file" accept=".csv,text/csv" /><div class="button-row"><button id="importGamesBtn" class="primary-btn" type="button">Import Games</button><button id="exportGamesBtn" class="ghost-btn" type="button">Export Current Games</button></div><h4>Full save data</h4><textarea id="importText" rows="7" placeholder="Paste exported JSON here"></textarea><div class="button-row"><button id="exportBtn" class="ghost-btn" type="button">Export Save Data</button><button id="importBtn" class="ghost-btn" type="button">Import Save Data</button></div></div>
+        <div id="importTab" class="tab-panel"><h4>Manual game import</h4><p class="muted">Paste JSON or CSV. Required fields: match id, game date, game time eastern, home team, away team, venue. The attached 104-match CSV is already bundled.</p><textarea id="gameImportText" rows="9" placeholder="matchId,date,timeET,homeTeam,awayTeam,venue,stage,group"></textarea><input id="csvFileInput" type="file" accept=".csv,text/csv" /><div class="button-row"><button id="loadDefaultScheduleBtn" class="primary-btn" type="button">Load 104 Match Schedule</button><button id="importGamesBtn" class="ghost-btn" type="button">Import Games</button><button id="exportGamesBtn" class="ghost-btn" type="button">Export Current Games</button></div><h4>Full save data</h4><textarea id="importText" rows="7" placeholder="Paste exported JSON here"></textarea><div class="button-row"><button id="exportBtn" class="ghost-btn" type="button">Export Save Data</button><button id="importBtn" class="ghost-btn" type="button">Import Save Data</button></div></div>
         <div id="overrideTab" class="tab-panel"><h4>Admin override panel</h4><p class="muted">Change any region pick, lock status, match status, or score.</p><div id="overrideList" class="admin-list"></div><button id="saveOverridesBtn" class="primary-btn" type="button">Save Overrides</button><button id="clearBtn" class="danger-btn" type="button">Clear Shared Data</button></div>
         <div id="auditTab" class="tab-panel"><h4>Audit log</h4><div id="auditLog" class="audit-log"></div><h4>Leaderboard history</h4><div id="historyLog" class="audit-log"></div></div>
       </div>
