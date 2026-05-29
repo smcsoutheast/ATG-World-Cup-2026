@@ -1,30 +1,33 @@
-Around the Grounds, World Cup 2026 Edition
+# Around the Grounds, World Cup 2026
 
-Simple GitHub Pages version.
+Simple GitHub Pages app with Firebase multi-device sync.
 
-Files to upload:
-index.html
-styles.css
-app.js
-schedule.js
-.nojekyll
-README.md
+## Files to upload
+Upload every file in this ZIP to the root of your GitHub Pages repository.
 
-This version uses browser localStorage only.
-It does not require Firebase.
-It is designed to load reliably on GitHub Pages.
+## Firebase setup
+1. Open Firebase Console.
+2. Select project `atg-world-cup-26`.
+3. Create or open Firestore Database.
+4. Go to Firestore Rules.
+5. Paste the contents of `firestore.rules`.
+6. Publish.
 
-Super admin passcode:
-ATG2026ADMIN
+The app stores shared picks and scores in one document:
 
-Region passcodes:
-Steve & Josh: SJ2026
-Southeast: SE2026
-Texas: TX2026
-Midwest: MW2026
-Mid-Atlantic: MA2026
+`competitions/worldcup2026`
 
-Notes:
-Data saved on one device will not sync to another device in this simplified version.
-Use this version first to confirm the page and competition logic work.
-Firebase sync can be added after the static version is stable.
+## Passcodes
+Super admin: `ATG2026ADMIN`
+
+Regions:
+- Steve & Josh: `SJ2026`
+- Southeast: `SE2026`
+- Texas: `TX2026`
+- Midwest: `MW2026`
+- Mid-Atlantic: `MA2026`
+
+## Sync notes
+If Firebase loads, the status bar says `Firebase sync active.`
+
+If rules are missing, the page still works locally but will show a Firebase error.

@@ -6,25 +6,98 @@
     { id:'Midwest', name:'Midwest', code:'MW2026', members:'Sean, Andrew, Sam' },
     { id:'MidAtlantic', name:'Mid-Atlantic', code:'MA2026', members:'John, Skyler' }
   ];
+
   const ADMIN_CODE = 'ATG2026ADMIN';
-  const KEY = 'atg_wc26_simple_v1';
+  const KEY = 'atg_wc26_simple_firebase_v1';
+  const DOC_PATH = 'competitions/worldcup2026';
   const STAGES = ['All Stages','Group Stage','Round of 32','Round of 16','Quarter-finals','Semi-finals','Third Place','Final'];
+
+  const $ = id => document.getElementById(id);
   const state = loadState();
   let activeRegion = null;
   let adminUnlocked = false;
+  let db = null;
+  let docRef = null;
+  let firebaseReady = false;
+  let applyingRemote = false;
 
-  const $ = id => document.getElementById(id);
-  const matchesEl = $('matches');
+  function defaultState(){ return { picks:{}, scores:{}, updatedAt:null }; }
 
   function loadState(){
-    const base = { picks:{}, scores:{} };
-    try {
-      return Object.assign(base, JSON.parse(localStorage.getItem(KEY) || '{}'));
-    } catch(e) {
-      return base;
+    try { return Object.assign(defaultState(), JSON.parse(localStorage.getItem(KEY) || '{}')); }
+    catch(e) { return defaultState(); }
+  }
+
+  function saveLocal(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+  function setSyncStatus(message, isBad){
+    let el = $('syncStatus');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'syncStatus';
+      el.className = 'sync-status';
+      document.querySelector('main').prepend(el);
+    }
+    el.textContent = message;
+    el.classList.toggle('bad', !!isBad);
+  }
+
+  function initFirebase(){
+    if(!window.ATG_FIREBASE_CONFIG){ setSyncStatus('Local mode. Firebase config missing.', true); return; }
+    if(!window.firebase || !firebase.firestore){ setSyncStatus('Local mode. Firebase scripts did not load.', true); return; }
+    try{
+      if(!firebase.apps.length) firebase.initializeApp(window.ATG_FIREBASE_CONFIG);
+      db = firebase.firestore();
+      docRef = db.doc(DOC_PATH);
+      firebaseReady = true;
+      setSyncStatus('Firebase sync active.');
+      docRef.onSnapshot(snapshot => {
+        if(!snapshot.exists){
+          saveRemote();
+          return;
+        }
+        const data = snapshot.data() || {};
+        applyingRemote = true;
+        state.picks = data.picks || {};
+        state.scores = data.scores || {};
+        state.updatedAt = data.updatedAt || null;
+        saveLocal();
+        applyingRemote = false;
+        renderAll();
+        renderAdmin();
+        setSyncStatus('Firebase sync active.');
+      }, err => {
+        firebaseReady = false;
+        setSyncStatus('Firebase read blocked. Check Firestore rules.', true);
+        console.error('Firestore read error:', err);
+      });
+    } catch(err){
+      firebaseReady = false;
+      setSyncStatus('Local mode. Firebase failed to initialize.', true);
+      console.error('Firebase init error:', err);
     }
   }
-  function saveState(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+  function saveState(){
+    state.updatedAt = new Date().toISOString();
+    saveLocal();
+    if(!applyingRemote) saveRemote();
+  }
+
+  function saveRemote(){
+    if(!firebaseReady || !docRef) return;
+    docRef.set({
+      picks: state.picks || {},
+      scores: state.scores || {},
+      updatedAt: state.updatedAt || new Date().toISOString()
+    }, { merge:true }).then(() => {
+      setSyncStatus('Saved to Firebase.');
+    }).catch(err => {
+      setSyncStatus('Saved locally only. Firebase write blocked.', true);
+      console.error('Firestore write error:', err);
+    });
+  }
+
   function matches(){ return (window.ATG_SCHEDULE || []).map(m => Object.assign({}, m, state.scores[m.id] || {})); }
   function isKnockout(stage){ return stage !== 'Group Stage'; }
   function resultFor(m){
@@ -96,6 +169,7 @@
     });
   }
   function renderMatches(){
+    const matchesEl = $('matches');
     const ms = filteredMatches();
     if(!ms.length){ matchesEl.innerHTML = '<div class="panel">No matches found.</div>'; return; }
     matchesEl.innerHTML = ms.map(cardHtml).join('');
@@ -129,7 +203,7 @@
   }
   function renderAdmin(){
     if(!adminUnlocked){ $('adminScores').innerHTML = ''; return; }
-    $('adminScores').innerHTML = matches().map(m => `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div><input data-home="${m.id}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${m.id}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${m.id}" type="button">Save</button></div>`).join('');
+    $('adminScores').innerHTML = matches().map(m => `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div><input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Save</button></div>`).join('');
     document.querySelectorAll('[data-save-score]').forEach(b => b.addEventListener('click', () => saveScore(b.dataset.saveScore)));
   }
   function saveScore(id){
@@ -150,7 +224,10 @@
     });
     $('regionCode').addEventListener('keydown', e => { if(e.key === 'Enter') $('regionUnlock').click(); });
     ['stageFilter','dateFilter','searchBox'].forEach(id => $(id).addEventListener('input', renderMatches));
-    $('adminOpen').addEventListener('click', () => $('adminDialog').showModal());
+    $('adminOpen').addEventListener('click', () => {
+      if(typeof $('adminDialog').showModal === 'function') $('adminDialog').showModal();
+      else $('adminDialog').setAttribute('open','open');
+    });
     $('adminUnlock').addEventListener('click', () => {
       adminUnlocked = $('adminCode').value.trim() === ADMIN_CODE;
       $('adminStatus').textContent = adminUnlocked ? 'Admin unlocked' : 'Wrong passcode';
@@ -158,7 +235,7 @@
     });
     $('adminCode').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('adminUnlock').click(); }});
     $('resetLocal').addEventListener('click', () => {
-      if(confirm('Reset all local picks and scores on this browser?')){ localStorage.removeItem(KEY); location.reload(); }
+      if(confirm('Reset local backup data on this browser? Firebase data will stay active.')){ localStorage.removeItem(KEY); location.reload(); }
     });
   }
   function renderAll(){ renderStandings(); renderMatches(); }
@@ -173,4 +250,5 @@
   bind();
   renderFilters();
   renderAll();
+  initFirebase();
 })();
