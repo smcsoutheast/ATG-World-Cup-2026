@@ -1,6 +1,3 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
-
 const CONFIG = window.ATG_CONFIG;
 const $ = (id) => document.getElementById(id);
 const todayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
@@ -23,6 +20,7 @@ let auditRef = null;
 let historyRef = null;
 let useFirebase = false;
 let unsub = null;
+let firebaseApi = null;
 
 function setSyncStatus(text, mode=''){
   const el = $('firebaseStatus');
@@ -32,20 +30,46 @@ function setSyncStatus(text, mode=''){
   if(mode) el.classList.add(mode);
 }
 
-function initFirebase(){
+async function initFirebase(){
   try{
-    if(!CONFIG.firebase?.enabled) throw new Error('Firebase disabled');
-    const app = initializeApp(CONFIG.firebase.config);
-    db = getFirestore(app);
-    stateRef = doc(db, ...CONFIG.firebase.statePath);
-    auditRef = collection(db, ...CONFIG.firebase.auditCollection);
-    historyRef = collection(db, ...CONFIG.firebase.historyCollection);
+    if(!CONFIG.firebase?.enabled) throw new Error('Firebase disabled in data.js');
+    if(!CONFIG.firebase.config?.projectId) throw new Error('Missing Firebase projectId in data.js');
+
+    setSyncStatus('Loading Firebase SDK...', 'draw');
+
+    const appModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
+    const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+    firebaseApi = {
+      initializeApp: appModule.initializeApp,
+      getFirestore: firestoreModule.getFirestore,
+      doc: firestoreModule.doc,
+      getDoc: firestoreModule.getDoc,
+      setDoc: firestoreModule.setDoc,
+      onSnapshot: firestoreModule.onSnapshot,
+      collection: firestoreModule.collection,
+      addDoc: firestoreModule.addDoc,
+      getDocs: firestoreModule.getDocs,
+      serverTimestamp: firestoreModule.serverTimestamp,
+      query: firestoreModule.query,
+      orderBy: firestoreModule.orderBy,
+      limit: firestoreModule.limit
+    };
+
+    const app = firebaseApi.initializeApp(CONFIG.firebase.config);
+    db = firebaseApi.getFirestore(app);
+    stateRef = firebaseApi.doc(db, ...CONFIG.firebase.statePath);
+    auditRef = firebaseApi.collection(db, ...CONFIG.firebase.auditCollection);
+    historyRef = firebaseApi.collection(db, ...CONFIG.firebase.historyCollection);
     useFirebase = true;
-    setSyncStatus('Firebase connected', 'win');
+    setSyncStatus('Firebase SDK loaded', 'win');
+    return true;
   }catch(err){
     useFirebase = false;
-    console.warn('Firebase startup failed:', err);
-    setSyncStatus('Local mode only', 'draw');
+    console.error('Firebase startup failed:', err);
+    setSyncStatus('Firebase failed to load', 'loss');
+    alert('Firebase failed to load. This is usually caused by blocked Firebase scripts, an incorrect Firebase config, or GitHub Pages serving an older cached file. Open the browser console for the exact error.');
+    return false;
   }
 }
 
@@ -53,10 +77,10 @@ async function loadState(){
   if(useFirebase){
     try{
       setSyncStatus('Loading Firebase...', 'draw');
-      const snap = await getDoc(stateRef);
+      const snap = await firebaseApi.getDoc(stateRef);
       if(snap.exists()) state = normalizeState(snap.data());
       else await saveState('System', 'Initialized competition state');
-      unsub = onSnapshot(stateRef, (docSnap) => {
+      unsub = firebaseApi.onSnapshot(stateRef, (docSnap) => {
         if(docSnap.exists()){
           state = normalizeState(docSnap.data());
           setSyncStatus('Live sync active', 'win');
@@ -101,7 +125,7 @@ async function saveState(actor='System', action='Updated data'){
   if(useFirebase){
     try{
       setSyncStatus('Saving to Firebase...', 'draw');
-      await setDoc(stateRef, state, { merge: false });
+      await firebaseApi.setDoc(stateRef, state, { merge: false });
       await addAudit(actor, action);
       await addHistory(actor);
       setSyncStatus('Saved to Firebase', 'win');
@@ -120,21 +144,21 @@ async function saveState(actor='System', action='Updated data'){
 
 async function addAudit(actor, action){
   if(!useFirebase) return;
-  await addDoc(auditRef, { actor, action, createdAt: serverTimestamp(), snapshotTime: new Date().toISOString() });
+  await firebaseApi.addDoc(auditRef, { actor, action, createdAt: firebaseApi.serverTimestamp(), snapshotTime: new Date().toISOString() });
   await loadAudit();
 }
 
 async function addHistory(actor){
   if(!useFirebase) return;
   const standings = calculateStandings();
-  await addDoc(historyRef, { actor, createdAt: serverTimestamp(), snapshotTime: new Date().toISOString(), standings });
+  await firebaseApi.addDoc(historyRef, { actor, createdAt: firebaseApi.serverTimestamp(), snapshotTime: new Date().toISOString(), standings });
   await loadHistory();
 }
 
 async function loadAudit(){
   if(!useFirebase) return;
-  const q = query(auditRef, orderBy('createdAt', 'desc'), limit(30));
-  const snaps = await getDocs(q);
+  const q = firebaseApi.query(auditRef, firebaseApi.orderBy('createdAt', 'desc'), firebaseApi.limit(30));
+  const snaps = await firebaseApi.getDocs(q);
   $('auditLog').innerHTML = snaps.docs.map(d => {
     const x = d.data();
     return `<div class="audit-entry"><strong>${escapeHtml(x.actor || 'System')}</strong><br>${escapeHtml(x.action || '')}<br><span class="muted">${formatDateTime(x.snapshotTime)}</span></div>`;
@@ -143,8 +167,8 @@ async function loadAudit(){
 
 async function loadHistory(){
   if(!useFirebase) return;
-  const q = query(historyRef, orderBy('createdAt', 'desc'), limit(15));
-  const snaps = await getDocs(q);
+  const q = firebaseApi.query(historyRef, firebaseApi.orderBy('createdAt', 'desc'), firebaseApi.limit(15));
+  const snaps = await firebaseApi.getDocs(q);
   $('historyLog').innerHTML = snaps.docs.map(d => {
     const x = d.data();
     const leader = (x.standings || [])[0];
@@ -393,4 +417,8 @@ function formatDate(d){ return new Date(`${d}T12:00:00`).toLocaleDateString('en-
 function formatDateTime(d){ if(!d) return ''; return new Date(d).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'}); }
 function escapeHtml(s){ return String(s ?? '').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
-wireEvents(); initFirebase(); loadState();
+wireEvents();
+(async () => {
+  await initFirebase();
+  await loadState();
+})();

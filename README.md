@@ -157,3 +157,24 @@ This update fixes two common test issues:
 7. The test game should appear.
 
 If device one says Firebase save failed, the issue is Firestore rules or the Firestore database has not been created yet.
+
+
+## Firebase failed to load fix
+
+This version loads Firebase with dynamic imports from the official Firebase CDN.
+
+If the page still shows Firebase failed to load:
+
+1. Hard refresh the GitHub Pages site.
+2. Open the site in a private browser window.
+3. Confirm these files were uploaded to GitHub:
+   - index.html
+   - app.js
+   - data.js
+   - styles.css
+   - firestore.rules
+4. Open Firebase Console, then Firestore Database, then Rules.
+5. Paste the contents of firestore.rules and publish.
+6. Confirm Firestore Database has been created for project atg-world-cup-26.
+
+If Firebase scripts are blocked by a device, network, or browser extension, the app will remain local only on that device.
