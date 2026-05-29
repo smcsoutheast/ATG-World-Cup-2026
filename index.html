@@ -1,81 +1,95 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Around the Grounds | FIFA World Cup 2026 Edition</title>
-  <meta name="description" content="SMC staff FIFA World Cup 2026 match prediction competition." />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Around the Grounds | World Cup 2026</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="site-header">
+  <header class="hero">
     <div>
-      <p class="eyebrow">SMC Staff Prediction Competition</p>
+      <p class="eyebrow">SMC Staff Competition</p>
       <h1>Around the Grounds</h1>
-      <p class="subtitle">FIFA World Cup 2026 Edition</p>
+      <p class="sub">FIFA World Cup 2026 prediction competition</p>
     </div>
-    <div class="header-actions">
-      <button id="themeToggle" class="ghost-btn" type="button">Dark Mode</button>
-      <button id="adminOpen" class="primary-btn" type="button">Admin</button>
-    </div>
+    <button id="adminOpen" class="ghost">Admin</button>
   </header>
 
   <main>
-    <section class="hero-card">
-      <div>
-        <h2>Regional territories face off.</h2>
-        <p>Pick winners. Track points. Count goals from each pick. Follow the table all tournament.</p>
+    <section class="panel standings-panel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Leaderboard</p>
+          <h2>Standings</h2>
+        </div>
+        <button id="resetLocal" class="ghost small">Reset local data</button>
+      </div>
+      <div class="table-wrap">
+        <table id="standingsTable">
+          <thead>
+            <tr>
+              <th>Region</th><th>P</th><th>W</th><th>D</th><th>L</th><th class="hide-sm">GF</th><th class="hide-sm">GA</th><th>GD</th><th>Pts</th><th class="hide-sm">Form</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </section>
 
-    <section class="dashboard-grid">
-      <div class="stat-card"><span>Matches Today</span><strong id="dashToday">0</strong></div>
-      <div class="stat-card"><span>Completed</span><strong id="dashCompleted">0</strong></div>
-      <div class="stat-card"><span>Total Picks</span><strong id="dashPicks">0</strong></div>
-      <div class="stat-card"><span>Leader</span><strong id="dashLeader">TBD</strong></div>
+    <section class="panel controls">
+      <label>Stage
+        <select id="stageFilter"></select>
+      </label>
+      <label>Date
+        <select id="dateFilter"></select>
+      </label>
+      <label>Search
+        <input id="searchBox" placeholder="Team, venue, city">
+      </label>
     </section>
 
-    <section class="toolbar" aria-label="Competition controls">
-      <label>Match date<input id="dateFilter" type="date" /></label>
-      <label>Stage<select id="stageFilter"><option value="all">All stages</option><option value="Group Stage">Group Stage</option><option value="Round of 32">Round of 32</option><option value="Round of 16">Round of 16</option><option value="Quarter-finals">Quarter-finals</option><option value="Semi-finals">Semi-finals</option><option value="Third Place">Third Place</option><option value="Final">Final</option></select></label>
-      <label>View<select id="viewFilter"><option value="today">Today</option><option value="all">All matches</option><option value="completed">Completed only</option><option value="upcoming">Upcoming only</option></select></label>
-      <button id="resetFilters" class="ghost-btn" type="button">Reset</button>
+    <section class="panel entry-panel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Regional Picks</p>
+          <h2>Make Selections</h2>
+        </div>
+        <select id="regionSelect"></select>
+      </div>
+      <div class="pass-row">
+        <input id="regionCode" type="password" placeholder="Region passcode">
+        <button id="regionUnlock">Unlock</button>
+        <span id="loginStatus"></span>
+      </div>
     </section>
 
-    <section class="section-card">
-      <div class="section-heading"><div><p class="eyebrow">Leaderboard</p><h2>Standings</h2></div><span id="lastUpdated" class="muted"></span></div>
-      <div class="table-wrap"><table id="standingsTable" class="standings-table"><thead><tr><th>Rank</th><th>Region</th><th>P</th><th>W</th><th>D</th><th>L</th><th class="wide-only">GF</th><th class="wide-only">GA</th><th>GD</th><th>Pts</th><th class="wide-only">Form</th></tr></thead><tbody></tbody></table></div>
-    </section>
-
-    <section class="section-card">
-      <div class="section-heading"><div><p class="eyebrow">Daily Card</p><h2>Matchups and Picks</h2></div><button id="refreshBtn" class="ghost-btn" type="button">Refresh</button></div>
-      <div id="matchesGrid" class="matches-grid"></div>
-    </section>
-
-    <section class="section-card">
-      <div class="section-heading"><div><p class="eyebrow">Knockout Stage</p><h2>Bracket Visualization</h2></div></div>
-      <div id="bracketGrid" class="bracket-grid"></div>
-    </section>
+    <section id="matches" class="match-grid"></section>
   </main>
 
-  <dialog id="adminDialog" class="admin-dialog">
-    <form method="dialog" class="dialog-head"><div><p class="eyebrow">Secure Entry</p><h2>Competition Admin</h2></div><button class="icon-btn" value="close" aria-label="Close">×</button></form>
-    <div id="loginPanel" class="login-panel"><label>Passcode<input id="passcodeInput" type="password" autocomplete="off" placeholder="Enter passcode" /></label><button id="unlockBtn" class="primary-btn" type="button">Unlock</button><p id="loginError" class="error-text" role="alert"></p></div>
-    <div id="entryPanel" class="entry-panel hidden">
-      <div class="admin-status"><span id="activeRole"></span><span id="firebaseStatus" class="status-pill">Checking Firebase</span><button id="lockBtn" class="ghost-btn" type="button">Lock</button></div>
-      <div id="regionalEntry" class="hidden"><h3>Submit regional picks</h3><p class="muted">Picks lock at kickoff time in Eastern Time. Group stage allows draw. Knockout does not.</p><div id="pickFormList" class="admin-list"></div><button id="savePicksBtn" class="primary-btn" type="button">Save Picks</button></div>
-      <div id="superAdmin" class="hidden">
-        <h3>Super admin</h3>
-        <div class="tabs"><button class="tab active" data-tab="scoresTab" type="button">Scores</button><button class="tab" data-tab="overrideTab" type="button">Override</button><button class="tab" data-tab="auditTab" type="button">Audit</button></div>
-        <div id="scoresTab" class="tab-panel active"><h4>Match results</h4><div id="resultFormList" class="admin-list"></div><button id="saveResultsBtn" class="primary-btn" type="button">Save Results</button></div>
-        <div id="overrideTab" class="tab-panel"><h4>Admin override panel</h4><p class="muted">Change any region pick, lock status, match status, or score.</p><div id="overrideList" class="admin-list"></div><button id="saveOverridesBtn" class="primary-btn" type="button">Save Overrides</button><button id="clearBtn" class="danger-btn" type="button">Clear Shared Data</button></div>
-        <div id="auditTab" class="tab-panel"><h4>Audit log</h4><div id="auditLog" class="audit-log"></div><h4>Leaderboard history</h4><div id="historyLog" class="audit-log"></div></div>
+  <dialog id="adminDialog">
+    <form method="dialog" class="admin-box">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Super Admin</p>
+          <h2>Scores</h2>
+        </div>
+        <button class="ghost" value="close">Close</button>
       </div>
-    </div>
+      <div class="pass-row">
+        <input id="adminCode" type="password" placeholder="Super admin passcode">
+        <button id="adminUnlock" type="button">Unlock</button>
+      </div>
+      <p id="adminStatus"></p>
+      <div id="adminScores" class="admin-scores"></div>
+    </form>
   </dialog>
 
-  <footer>Around the Grounds | FIFA World Cup 2026 Edition | Built for SMC staff use</footer>
-  <script src="data.js"></script>
-  <script type="module" src="app.js"></script>
+  <footer>
+    Soccer Management Company, Around the Grounds, World Cup 2026 Edition
+  </footer>
+
+  <script src="schedule.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

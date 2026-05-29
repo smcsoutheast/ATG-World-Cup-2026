@@ -1,449 +1,176 @@
-const CONFIG = window.ATG_CONFIG || {};
-const clone = (value) => {
-  if (typeof structuredClone === 'function') return structuredClone(value);
-  return JSON.parse(JSON.stringify(value));
-};
-window.addEventListener('error', (event) => {
-  const el = document.getElementById('firebaseStatus');
-  if (el) { el.textContent = 'Page error: ' + (event.message || 'unknown error'); el.classList.add('loss'); }
-  console.error('Page error:', event.error || event.message);
-});
-window.addEventListener('unhandledrejection', (event) => {
-  const el = document.getElementById('firebaseStatus');
-  if (el) { el.textContent = 'App error: ' + ((event.reason && event.reason.message) || 'unknown error'); el.classList.add('loss'); }
-  console.error('Unhandled promise rejection:', event.reason);
-});
-const $ = (id) => document.getElementById(id);
-const todayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-const nowEtMs = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })).getTime();
+(function(){
+  const REGIONS = [
+    { id:'SteveJosh', name:'Steve & Josh', code:'SJ2026', members:'Steve, Josh' },
+    { id:'Southeast', name:'Southeast', code:'SE2026', members:'Justin, Ashley, Drake' },
+    { id:'Texas', name:'Texas', code:'TX2026', members:'Zarin, Gabriella' },
+    { id:'Midwest', name:'Midwest', code:'MW2026', members:'Sean, Andrew, Sam' },
+    { id:'MidAtlantic', name:'Mid-Atlantic', code:'MA2026', members:'John, Skyler' }
+  ];
+  const ADMIN_CODE = 'ATG2026ADMIN';
+  const KEY = 'atg_wc26_simple_v1';
+  const STAGES = ['All Stages','Group Stage','Round of 32','Round of 16','Quarter-finals','Semi-finals','Third Place','Final'];
+  const state = loadState();
+  let activeRegion = null;
+  let adminUnlocked = false;
 
-const DEFAULT_STATE = {
-  matches: CONFIG.matches.map(normalizeMatch),
-  picks: {},
-  results: {},
-  overrides: {},
-  updatedAt: null,
-  updatedBy: 'System'
-};
+  const $ = id => document.getElementById(id);
+  const matchesEl = $('matches');
 
-let state = clone(DEFAULT_STATE);
-let role = null;
-let db = null;
-let stateRef = null;
-let auditRef = null;
-let historyRef = null;
-let useFirebase = false;
-let unsub = null;
-let firebaseApi = null;
-
-const STAGE_OPTIONS = ["Group Stage", "Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Third Place", "Final"];
-function stageType(match){
-  const s = String(match.stage || match.stageLabel || '').toLowerCase();
-  if(match.stageType) return match.stageType;
-  return s === 'group' || s === 'group stage' ? 'group' : 'knockout';
-}
-function normalizeStage(value){
-  const v = String(value || '').trim();
-  if(!v) return 'Group Stage';
-  const key = v.toLowerCase();
-  if(key === 'group') return 'Group Stage';
-  if(key === 'knockout') return 'Round of 32';
-  return STAGE_OPTIONS.find(x => x.toLowerCase() === key) || v;
-}
-function normalizeMatch(match){
-  const stage = normalizeStage(match.stageLabel || match.stage || 'Group Stage');
-  const type = stage === 'Group Stage' ? 'group' : 'knockout';
-  const group = type === 'group' ? (match.group || '') : stage;
-  return { ...match, stage, stageType:type, stageLabel:stage, group };
-}
-
-function setSyncStatus(text, mode=''){
-  const el = $('firebaseStatus');
-  if(!el) return;
-  el.textContent = text;
-  el.classList.remove('win','loss','draw');
-  if(mode) el.classList.add(mode);
-}
-
-async function initFirebase(){
-  try{
-    if(!CONFIG.firebase?.enabled) throw new Error('Firebase disabled in data.js');
-    if(!CONFIG.firebase.config?.projectId) throw new Error('Missing Firebase projectId in data.js');
-
-    setSyncStatus('Loading Firebase SDK...', 'draw');
-
-    const withTimeout = (promise, label) => Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(label + ' timed out. Check internet access and Firebase CDN access.')), 10000))
-    ]);
-
-    const appModule = await withTimeout(import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js'), 'Firebase app SDK');
-    const firestoreModule = await withTimeout(import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'), 'Firebase Firestore SDK');
-
-    firebaseApi = {
-      initializeApp: appModule.initializeApp,
-      getFirestore: firestoreModule.getFirestore,
-      doc: firestoreModule.doc,
-      getDoc: firestoreModule.getDoc,
-      setDoc: firestoreModule.setDoc,
-      onSnapshot: firestoreModule.onSnapshot,
-      collection: firestoreModule.collection,
-      addDoc: firestoreModule.addDoc,
-      getDocs: firestoreModule.getDocs,
-      serverTimestamp: firestoreModule.serverTimestamp,
-      query: firestoreModule.query,
-      orderBy: firestoreModule.orderBy,
-      limit: firestoreModule.limit
-    };
-
-    const app = firebaseApi.initializeApp(CONFIG.firebase.config);
-    db = firebaseApi.getFirestore(app);
-    stateRef = firebaseApi.doc(db, ...CONFIG.firebase.statePath);
-    auditRef = firebaseApi.collection(db, ...CONFIG.firebase.auditCollection);
-    historyRef = firebaseApi.collection(db, ...CONFIG.firebase.historyCollection);
-    useFirebase = true;
-    setSyncStatus('Firebase SDK loaded', 'win');
-    return true;
-  }catch(err){
-    useFirebase = false;
-    console.error('Firebase startup failed:', err);
-    setSyncStatus('Firebase failed: ' + (err.message || 'SDK load error'), 'loss');
-    return false;
+  function loadState(){
+    const base = { picks:{}, scores:{} };
+    try {
+      return Object.assign(base, JSON.parse(localStorage.getItem(KEY) || '{}'));
+    } catch(e) {
+      return base;
+    }
   }
-}
-
-async function loadState(){
-  if(useFirebase){
-    try{
-      setSyncStatus('Loading Firebase...', 'draw');
-      const snap = await firebaseApi.getDoc(stateRef);
-      if(snap.exists()) state = normalizeState(snap.data());
-      else await saveState('System', 'Initialized competition state');
-      unsub = firebaseApi.onSnapshot(stateRef, (docSnap) => {
-        if(docSnap.exists()){
-          state = normalizeState(docSnap.data());
-          setSyncStatus('Live sync active', 'win');
-          renderAll();
-        }
-      }, (err) => {
-        console.error('Firebase listener failed:', err);
-        setSyncStatus('Firebase read failed', 'loss');
-        alert('Firebase read failed. Check Firestore security rules and project settings.');
+  function saveState(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+  function matches(){ return (window.ATG_SCHEDULE || []).map(m => Object.assign({}, m, state.scores[m.id] || {})); }
+  function isKnockout(stage){ return stage !== 'Group Stage'; }
+  function resultFor(m){
+    if(m.homeScore === null || m.homeScore === undefined || m.awayScore === null || m.awayScore === undefined || m.homeScore === '' || m.awayScore === '') return null;
+    const h = Number(m.homeScore), a = Number(m.awayScore);
+    if(h > a) return 'HOME';
+    if(a > h) return 'AWAY';
+    return 'DRAW';
+  }
+  function pickLabel(m,pick){
+    if(!pick) return 'No pick';
+    if(pick === 'HOME') return m.homeTeam;
+    if(pick === 'AWAY') return m.awayTeam;
+    return 'Draw';
+  }
+  function pointsFor(m,pick){
+    const res = resultFor(m);
+    if(!res || !pick) return null;
+    if(pick === res) return pick === 'DRAW' ? 1 : 3;
+    return 0;
+  }
+  function goalsFor(m,pick){
+    const res = resultFor(m);
+    if(!res || !pick || pick === 'DRAW') return { gf:0, ga:0 };
+    const h = Number(m.homeScore), a = Number(m.awayScore);
+    return pick === 'HOME' ? { gf:h, ga:a } : { gf:a, ga:h };
+  }
+  function calcStandings(){
+    const ms = matches();
+    return REGIONS.map(r => {
+      const row = { region:r.name, p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, form:[] };
+      ms.forEach(m => {
+        const pick = state.picks[r.id]?.[m.id];
+        const pts = pointsFor(m,pick);
+        if(pts === null) return;
+        row.p += 1;
+        if(pts === 3) row.w += 1;
+        else if(pts === 1) row.d += 1;
+        else row.l += 1;
+        row.pts += pts;
+        const g = goalsFor(m,pick);
+        row.gf += g.gf;
+        row.ga += g.ga;
+        row.form.push(pts === 3 ? 'W' : pts === 1 ? 'D' : 'L');
       });
-      await loadAudit();
-      await loadHistory();
-    }catch(err){
-      console.error('Firebase load failed:', err);
-      useFirebase = false;
-      setSyncStatus('Firebase read failed: ' + (err.message || 'Local only'), 'loss');
-      const saved = localStorage.getItem('atg-state');
-      if(saved) state = normalizeState(JSON.parse(saved));
-    }
-  }else{
-    const saved = localStorage.getItem('atg-state');
-    if(saved) state = normalizeState(JSON.parse(saved));
+      row.gd = row.gf - row.ga;
+      row.form = row.form.slice(-5).join(' ');
+      return row;
+    }).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.region.localeCompare(b.region));
   }
-  renderAll();
-}
-
-function normalizeState(input){
-  input = input || {};
-  return {
-    ...DEFAULT_STATE,
-    ...input,
-    matches: Array.isArray(input.matches) && input.matches.length ? input.matches.map(normalizeMatch) : CONFIG.matches.map(normalizeMatch),
-    picks: input.picks || {},
-    results: input.results || {},
-    overrides: input.overrides || {}
-  };
-}
-
-async function saveState(actor='System', action='Updated data'){
-  state.updatedAt = new Date().toISOString();
-  state.updatedBy = actor;
-  if(useFirebase){
-    try{
-      setSyncStatus('Saving to Firebase...', 'draw');
-      await firebaseApi.setDoc(stateRef, state, { merge: false });
-      await addAudit(actor, action);
-      await addHistory(actor);
-      setSyncStatus('Saved to Firebase', 'win');
-    }catch(err){
-      console.error('Firebase save failed:', err);
-      setSyncStatus('Firebase save failed', 'loss');
-      alert('Firebase save failed. The change was not shared to other devices. Check Firestore security rules.');
-      throw err;
-    }
-  }else{
-    localStorage.setItem('atg-state', JSON.stringify(state));
-    setSyncStatus('Saved locally only', 'draw');
+  function renderStandings(){
+    const tbody = document.querySelector('#standingsTable tbody');
+    tbody.innerHTML = calcStandings().map((r,i) => `<tr><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td class="hide-sm">${esc(r.form)}</td></tr>`).join('');
   }
-  renderAll();
-}
-
-async function addAudit(actor, action){
-  if(!useFirebase) return;
-  await firebaseApi.addDoc(auditRef, { actor, action, createdAt: firebaseApi.serverTimestamp(), snapshotTime: new Date().toISOString() });
-  await loadAudit();
-}
-
-async function addHistory(actor){
-  if(!useFirebase) return;
-  const standings = calculateStandings();
-  await firebaseApi.addDoc(historyRef, { actor, createdAt: firebaseApi.serverTimestamp(), snapshotTime: new Date().toISOString(), standings });
-  await loadHistory();
-}
-
-async function loadAudit(){
-  if(!useFirebase) return;
-  const q = firebaseApi.query(auditRef, firebaseApi.orderBy('createdAt', 'desc'), firebaseApi.limit(30));
-  const snaps = await firebaseApi.getDocs(q);
-  $('auditLog').innerHTML = snaps.docs.map(d => {
-    const x = d.data();
-    return `<div class="audit-entry"><strong>${escapeHtml(x.actor || 'System')}</strong><br>${escapeHtml(x.action || '')}<br><span class="muted">${formatDateTime(x.snapshotTime)}</span></div>`;
-  }).join('') || '<p class="muted">No audit entries yet.</p>';
-}
-
-async function loadHistory(){
-  if(!useFirebase) return;
-  const q = firebaseApi.query(historyRef, firebaseApi.orderBy('createdAt', 'desc'), firebaseApi.limit(15));
-  const snaps = await firebaseApi.getDocs(q);
-  $('historyLog').innerHTML = snaps.docs.map(d => {
-    const x = d.data();
-    const leader = (x.standings || [])[0];
-    return `<div class="audit-entry"><strong>${leader ? escapeHtml(leader.region.name) : 'No leader'}</strong> led with ${leader ? leader.pts : 0} pts<br><span class="muted">${formatDateTime(x.snapshotTime)} by ${escapeHtml(x.actor || 'System')}</span></div>`;
-  }).join('') || '<p class="muted">No history yet.</p>';
-}
-
-function getResult(match){ return state.results[match.id] || {}; }
-function matchStatus(match){
-  const r = getResult(match);
-  if(r.status) return r.status;
-  if(r.homeGoals !== undefined && r.homeGoals !== null && r.awayGoals !== undefined && r.awayGoals !== null) return 'completed';
-  return isLocked(match) ? 'locked' : 'scheduled';
-}
-function kickoffMs(match){ return new Date(`${match.date}T${match.time || match.timeET || '00:00'}:00-04:00`).getTime(); }
-function isLocked(match){ return state.overrides?.[match.id]?.unlocked ? false : nowEtMs() >= kickoffMs(match); }
-function isCompleted(match){ return matchStatus(match) === 'completed'; }
-function outcome(match){
-  const r = getResult(match);
-  const hg = Number(r.homeGoals), ag = Number(r.awayGoals);
-  if(!Number.isFinite(hg) || !Number.isFinite(ag)) return null;
-  if(hg > ag) return 'home';
-  if(ag > hg) return 'away';
-  return 'draw';
-}
-function pickGoals(match, pick){
-  const r = getResult(match);
-  const hg = Number(r.homeGoals), ag = Number(r.awayGoals);
-  if(!Number.isFinite(hg) || !Number.isFinite(ag) || pick === 'draw' || !pick) return { gf:0, ga:0 };
-  return pick === 'home' ? { gf:hg, ga:ag } : { gf:ag, ga:hg };
-}
-
-function calculateStandings(){
-  const rows = CONFIG.regions.map(region => ({ region, p:0,w:0,d:0,l:0,gf:0,ga:0,gd:0,pts:0,form:[] }));
-  const completed = state.matches.filter(isCompleted).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-  for(const match of completed){
-    const out = outcome(match);
-    if(!out) continue;
-    for(const row of rows){
-      const pick = state.picks[row.region.id]?.[match.id];
-      if(!pick) continue;
-      row.p++;
-      const goals = pickGoals(match, pick);
-      row.gf += goals.gf; row.ga += goals.ga;
-      if(pick === out){
-        if(out === 'draw'){ row.d++; row.pts += 1; row.form.push('D'); }
-        else { row.w++; row.pts += 3; row.form.push('W'); }
-      }else{ row.l++; row.form.push('L'); }
-    }
+  function renderFilters(){
+    $('stageFilter').innerHTML = STAGES.map(s => `<option>${esc(s)}</option>`).join('');
+    const dates = ['All Dates', ...new Set(matches().map(m => m.date).sort())];
+    $('dateFilter').innerHTML = dates.map(d => `<option value="${esc(d)}">${d === 'All Dates' ? d : prettyDate(d)}</option>`).join('');
   }
-  rows.forEach(r => r.gd = r.gf - r.ga);
-  rows.sort((a,b)=> b.pts-a.pts || b.gd-a.gd || b.gf-a.gf || a.region.name.localeCompare(b.region.name));
-  return rows;
-}
-
-function renderAll(){ renderStandings(); renderMatches(); renderAdminForms(); renderDashboard(); renderBracket(); }
-
-function renderStandings(){
-  const standings = calculateStandings();
-  $('standingsTable').querySelector('tbody').innerHTML = standings.map((r,i)=>`
-    <tr><td>${i+1}</td><td><strong>${escapeHtml(r.region.name)}</strong><br><span class="muted">${r.region.members.join(', ')}</span></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="wide-only">${r.gf}</td><td class="wide-only">${r.ga}</td><td>${r.gd}</td><td><strong>${r.pts}</strong></td><td class="wide-only">${renderForm(r.form)}</td></tr>`).join('');
-  $('lastUpdated').textContent = state.updatedAt ? `Updated ${formatDateTime(state.updatedAt)} by ${state.updatedBy || 'System'}` : '';
-}
-function renderForm(form){ return form.slice(-5).map(v=>`<span class="form-pill ${v==='W'?'win':v==='D'?'draw':'loss'}">${v}</span>`).join(' ') || '<span class="muted">None</span>'; }
-
-function filteredMatches(){
-  const date = $('dateFilter').value;
-  const stage = $('stageFilter').value;
-  const view = $('viewFilter').value;
-  return state.matches.filter(m => {
-    if(stage !== 'all' && (m.stageLabel || m.stage) !== stage) return false;
-    if(date && m.date !== date) return false;
-    if(view === 'today' && m.date !== todayIso()) return false;
-    if(view === 'completed' && !isCompleted(m)) return false;
-    if(view === 'upcoming' && isCompleted(m)) return false;
-    return true;
-  }).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-}
-
-function renderMatches(){
-  const matches = filteredMatches();
-  $('matchesGrid').innerHTML = matches.map(match => {
-    const r = getResult(match); const out = outcome(match);
-    const score = isCompleted(match) ? `<span class="score">${r.homeGoals} - ${r.awayGoals}</span>` : `<span class="status-pill">${matchStatus(match)}</span>`;
-    const picks = CONFIG.regions.map(region => {
-      const pick = state.picks[region.id]?.[match.id];
-      const correct = out && pick === out ? 'correct' : '';
-      return `<div class="pick-row ${correct}"><strong>${escapeHtml(region.name)}</strong><span class="pick-pill">${pickLabel(match,pick)}</span></div>`;
+  function filteredMatches(){
+    const stage = $('stageFilter').value;
+    const date = $('dateFilter').value;
+    const q = $('searchBox').value.trim().toLowerCase();
+    return matches().filter(m => {
+      const stageOk = stage === 'All Stages' || m.stage === stage;
+      const dateOk = date === 'All Dates' || m.date === date;
+      const hay = `${m.homeTeam} ${m.awayTeam} ${m.venue} ${m.city} ${m.country} ${m.stage}`.toLowerCase();
+      return stageOk && dateOk && (!q || hay.includes(q));
+    });
+  }
+  function renderMatches(){
+    const ms = filteredMatches();
+    if(!ms.length){ matchesEl.innerHTML = '<div class="panel">No matches found.</div>'; return; }
+    matchesEl.innerHTML = ms.map(cardHtml).join('');
+    document.querySelectorAll('[data-pick]').forEach(btn => btn.addEventListener('click', onPick));
+  }
+  function cardHtml(m){
+    const res = resultFor(m);
+    const picks = REGIONS.map(r => {
+      const pick = state.picks[r.id]?.[m.id];
+      const pts = pointsFor(m,pick);
+      const cls = pts === 3 || pts === 1 ? 'correct' : pts === 0 ? 'wrong' : pick === 'DRAW' ? 'draw' : '';
+      return `<div class="pick-line"><span>${esc(r.name)}</span><span class="${cls}">${esc(pickLabel(m,pick))}</span></div>`;
     }).join('');
-    return `<article class="match-card ${isLocked(match)?'locked':''}"><div class="match-top"><span>Match ${escapeHtml(match.matchNumber || match.id)} | ${formatDate(match.date)} | ${escapeHtml(match.time || match.timeET || '')} ET</span><span>${escapeHtml(match.group || match.stageLabel || match.stage || '')}</span></div><div class="teams"><span>${escapeHtml(match.home)}</span><span class="vs">vs</span><span>${escapeHtml(match.away)}</span></div><div>${score}</div><p class="muted">${escapeHtml(match.venue || 'Venue TBD')}</p><div class="picks-grid">${picks}</div></article>`;
-  }).join('') || '<p class="muted">No matches match your filters.</p>';
-}
-function pickLabel(match,pick){ if(!pick) return 'No pick'; if(pick==='home') return match.home; if(pick==='away') return match.away; return 'Draw'; }
-
-function renderDashboard(){
-  const today = todayIso();
-  $('dashToday').textContent = state.matches.filter(m=>m.date===today).length;
-  $('dashCompleted').textContent = state.matches.filter(isCompleted).length;
-  $('dashPicks').textContent = Object.values(state.picks).reduce((n,p)=> n + Object.keys(p||{}).length, 0);
-  const leader = calculateStandings()[0];
-  $('dashLeader').textContent = leader ? `${leader.region.name} (${leader.pts})` : 'TBD';
-}
-
-function renderBracket(){
-  const rounds = {};
-  state.matches.filter(m=>stageType(m)==='knockout').forEach(m => { const key = m.stageLabel || m.stage || 'Knockout'; (rounds[key] ||= []).push(m); });
-  $('bracketGrid').innerHTML = Object.keys(rounds).length ? Object.entries(rounds).map(([round,matches])=>`<div class="bracket-round"><h3>${escapeHtml(round)}</h3>${matches.map(m=>`<div class="bracket-match"><strong>${escapeHtml(m.home)}</strong><br>vs<br><strong>${escapeHtml(m.away)}</strong><br><span class="muted">${formatDate(m.date)} ${escapeHtml(m.time||'')} ET</span></div>`).join('')}</div>`).join('') : '<p class="muted">Knockout matches will display here from the built-in schedule.</p>';
-}
-
-function renderAdminForms(){
-  if(!role) return;
-  if(role.type === 'region') renderPickForm();
-  if(role.type === 'admin'){ renderResultForm(); renderOverrideForm(); }
-}
-function renderPickForm(){
-  $('pickFormList').innerHTML = state.matches.sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)).map(match => {
-    const current = state.picks[role.regionId]?.[match.id] || '';
-    const disabled = isLocked(match) ? 'disabled' : '';
-    const draw = stageType(match) === 'group' ? '<option value="draw">Draw</option>' : '';
-    return `<div class="admin-item"><h5>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><p class="muted">${formatDate(match.date)} ${escapeHtml(match.time||'')} ET | ${escapeHtml(match.venue||'')}</p><select data-pick-match="${match.id}" ${disabled}><option value="">No pick</option><option value="home" ${current==='home'?'selected':''}>${escapeHtml(match.home)}</option>${draw}<option value="away" ${current==='away'?'selected':''}>${escapeHtml(match.away)}</option></select>${disabled?'<p class="muted">Locked at kickoff.</p>':''}</div>`;
-  }).join('');
-}
-function renderResultForm(){
-  $('resultFormList').innerHTML = state.matches.map(match => {
-    const r = getResult(match);
-    return `<div class="admin-item"><h5>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><div class="field-grid"><label>Home Goals<input type="number" min="0" data-result-home="${match.id}" value="${r.homeGoals ?? ''}"></label><label>Away Goals<input type="number" min="0" data-result-away="${match.id}" value="${r.awayGoals ?? ''}"></label><label>Status<select data-result-status="${match.id}"><option value="scheduled" ${matchStatus(match)==='scheduled'?'selected':''}>Scheduled</option><option value="locked" ${matchStatus(match)==='locked'?'selected':''}>Locked</option><option value="completed" ${matchStatus(match)==='completed'?'selected':''}>Completed</option></select></label><label>Stage<select data-stage="${match.id}">${STAGE_OPTIONS.map(stage => `<option value="${stage}" ${normalizeStage(match.stageLabel || match.stage)===stage?'selected':''}>${stage}</option>`).join('')}</select></label></div></div>`;
-  }).join('');
-}
-function renderOverrideForm(){
-  $('overrideList').innerHTML = state.matches.map(match => {
-    const picks = CONFIG.regions.map(region => {
-      const cur = state.picks[region.id]?.[match.id] || '';
-      const draw = stageType(match) === 'group' ? '<option value="draw">Draw</option>' : '';
-      return `<label>${escapeHtml(region.name)}<select data-override-pick="${region.id}|${match.id}"><option value="">No pick</option><option value="home" ${cur==='home'?'selected':''}>${escapeHtml(match.home)}</option>${draw}<option value="away" ${cur==='away'?'selected':''}>${escapeHtml(match.away)}</option></select></label>`;
-    }).join('');
-    const unlocked = state.overrides?.[match.id]?.unlocked;
-    return `<div class="admin-item"><h5>${escapeHtml(match.id)} | ${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><div class="field-grid two">${picks}</div><label><input type="checkbox" data-unlock-match="${match.id}" ${unlocked?'checked':''}> Keep entry unlocked after kickoff</label></div>`;
-  }).join('');
-}
-
-async function unlock(){
-  const code = $('passcodeInput').value.trim();
-  if(code === CONFIG.passcodes.superAdmin){ role = { type:'admin', name:'Super Admin' }; }
-  else{
-    const regionId = Object.entries(CONFIG.passcodes.regions).find(([,pass])=>pass===code)?.[0];
-    if(regionId) role = { type:'region', regionId, name: CONFIG.regions.find(r=>r.id===regionId).name };
+    const current = activeRegion ? state.picks[activeRegion]?.[m.id] : null;
+    const options = isKnockout(m.stage) ? ['HOME','AWAY'] : ['HOME','DRAW','AWAY'];
+    const buttons = activeRegion ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}">${esc(pickLabel(m,o))}</button>`).join('')}</div>` : '<p class="meta">Unlock your region to submit picks.</p>';
+    return `<article class="card">
+      <div class="card-head"><div><div class="stage">${esc(m.stage)}${m.group ? ' · Group ' + esc(m.group) : ''}</div><div class="meta">Match ${esc(m.id)} · ${prettyDate(m.date)} · ${esc(m.timeET)} ET</div></div><div class="meta">${esc(m.country)}</div></div>
+      <div class="teams"><div class="team-row"><span>${esc(m.homeTeam)}</span><span class="score">${scoreText(m.homeScore)}</span></div><div class="team-row"><span>${esc(m.awayTeam)}</span><span class="score">${scoreText(m.awayScore)}</span></div><div class="venue">${esc(m.venue)} · ${esc(m.city)}</div>${res ? `<div class="stage">Result: ${esc(resultName(m,res))}</div>` : ''}</div>
+      <div class="pick-panel">${buttons}</div><div class="picks">${picks}</div>
+    </article>`;
   }
-  if(!role){ $('loginError').textContent = 'Invalid passcode. Super admin default: ATG2026ADMIN. Region examples: SE2026, TX2026, MW2026, MA2026, SJ2026.'; return; }
-  $('loginPanel').classList.add('hidden'); $('entryPanel').classList.remove('hidden'); $('activeRole').textContent = `Unlocked: ${role.name}`;
-  $('regionalEntry').classList.toggle('hidden', role.type !== 'region'); $('superAdmin').classList.toggle('hidden', role.type !== 'admin');
-  renderAdminForms();
-}
-
-async function savePicks(){
-  const picks = { ...(state.picks[role.regionId] || {}) };
-  document.querySelectorAll('[data-pick-match]').forEach(sel => { if(!sel.disabled){ const v = sel.value; if(v) picks[sel.dataset.pickMatch] = v; else delete picks[sel.dataset.pickMatch]; } });
-  state.picks[role.regionId] = picks;
-  await saveState(role.name, `Saved picks for ${role.name}`);
-}
-async function saveResults(){
-  document.querySelectorAll('[data-result-home]').forEach(input => {
-    const id = input.dataset.resultHome;
-    const home = input.value === '' ? null : Number(input.value);
-    const awayInput = document.querySelector(`[data-result-away="${id}"]`);
-    const statusSel = document.querySelector(`[data-result-status="${id}"]`);
-    const stageSel = document.querySelector(`[data-stage="${id}"]`);
-    const away = awayInput.value === '' ? null : Number(awayInput.value);
-    state.results[id] = { homeGoals: home, awayGoals: away, status: statusSel.value };
-    const match = state.matches.find(m=>m.id===id); if(match){ match.stage = normalizeStage(stageSel.value); match.stageLabel = match.stage; match.stageType = match.stage === 'Group Stage' ? 'group' : 'knockout'; match.group = match.stageType === 'group' ? match.group : match.stage; }
-  });
-  await saveState(role.name, 'Saved match results and recalculated standings');
-}
-async function saveOverrides(){
-  document.querySelectorAll('[data-override-pick]').forEach(sel => {
-    const [regionId, matchId] = sel.dataset.overridePick.split('|');
-    state.picks[regionId] ||= {};
-    if(sel.value) state.picks[regionId][matchId] = sel.value; else delete state.picks[regionId][matchId];
-  });
-  document.querySelectorAll('[data-unlock-match]').forEach(chk => { state.overrides[chk.dataset.unlockMatch] = { unlocked: chk.checked }; });
-  await saveState(role.name, 'Saved admin overrides');
-}
-
-async function clearData(){ if(confirm('Clear all shared data and reset to defaults?')){ state=clone(DEFAULT_STATE); await saveState(role.name, 'Cleared all shared data'); } }
-
-function openAdmin(){
-  const dlg = $('adminDialog');
-  if(!dlg) return;
-  $('loginError').textContent = '';
-  try{
-    if(typeof dlg.showModal === 'function' && !dlg.open) dlg.showModal();
-    else dlg.setAttribute('open','');
-  }catch(err){
-    dlg.setAttribute('open','');
+  function onPick(e){
+    if(!activeRegion) return;
+    const matchId = e.currentTarget.dataset.match;
+    const pick = e.currentTarget.dataset.pick;
+    state.picks[activeRegion] = state.picks[activeRegion] || {};
+    state.picks[activeRegion][matchId] = pick;
+    saveState();
+    renderAll();
   }
-  dlg.classList.add('open');
-  setTimeout(() => $('passcodeInput')?.focus(), 50);
-}
+  function renderAdmin(){
+    if(!adminUnlocked){ $('adminScores').innerHTML = ''; return; }
+    $('adminScores').innerHTML = matches().map(m => `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div><input data-home="${m.id}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${m.id}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${m.id}" type="button">Save</button></div>`).join('');
+    document.querySelectorAll('[data-save-score]').forEach(b => b.addEventListener('click', () => saveScore(b.dataset.saveScore)));
+  }
+  function saveScore(id){
+    const h = document.querySelector(`[data-home="${CSS.escape(id)}"]`).value;
+    const a = document.querySelector(`[data-away="${CSS.escape(id)}"]`).value;
+    state.scores[id] = { homeScore: h === '' ? null : Number(h), awayScore: a === '' ? null : Number(a) };
+    saveState();
+    renderAll();
+    renderAdmin();
+  }
+  function bind(){
+    $('regionSelect').innerHTML = REGIONS.map(r => `<option value="${r.id}">${esc(r.name)} · ${esc(r.members)}</option>`).join('');
+    $('regionUnlock').addEventListener('click', () => {
+      const r = REGIONS.find(x => x.id === $('regionSelect').value);
+      if(r && $('regionCode').value.trim() === r.code){ activeRegion = r.id; $('loginStatus').textContent = `${r.name} unlocked`; }
+      else { $('loginStatus').textContent = 'Wrong passcode'; }
+      renderMatches();
+    });
+    $('regionCode').addEventListener('keydown', e => { if(e.key === 'Enter') $('regionUnlock').click(); });
+    ['stageFilter','dateFilter','searchBox'].forEach(id => $(id).addEventListener('input', renderMatches));
+    $('adminOpen').addEventListener('click', () => $('adminDialog').showModal());
+    $('adminUnlock').addEventListener('click', () => {
+      adminUnlocked = $('adminCode').value.trim() === ADMIN_CODE;
+      $('adminStatus').textContent = adminUnlocked ? 'Admin unlocked' : 'Wrong passcode';
+      renderAdmin();
+    });
+    $('adminCode').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('adminUnlock').click(); }});
+    $('resetLocal').addEventListener('click', () => {
+      if(confirm('Reset all local picks and scores on this browser?')){ localStorage.removeItem(KEY); location.reload(); }
+    });
+  }
+  function renderAll(){ renderStandings(); renderMatches(); }
+  function prettyDate(d){
+    const dt = new Date(d + 'T12:00:00');
+    return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  }
+  function esc(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+  function scoreText(v){ return v === null || v === undefined || v === '' ? '-' : esc(v); }
+  function resultName(m,res){ return res === 'HOME' ? m.homeTeam : res === 'AWAY' ? m.awayTeam : 'Draw'; }
 
-function closeAdmin(){
-  const dlg = $('adminDialog');
-  if(!dlg) return;
-  dlg.classList.remove('open');
-  try{ if(typeof dlg.close === 'function') dlg.close(); }
-  catch(err){ dlg.removeAttribute('open'); }
-}
-
-function lockAdmin(){
-  role = null;
-  $('entryPanel').classList.add('hidden');
-  $('loginPanel').classList.remove('hidden');
-  $('passcodeInput').value = '';
-  $('loginError').textContent = 'Admin locked.';
-}
-
-function wireEvents(){
-  $('themeToggle').onclick = () => { const d=document.documentElement; const dark=d.dataset.theme!=='dark'; d.dataset.theme=dark?'dark':'light'; localStorage.setItem('atg-theme', d.dataset.theme); $('themeToggle').textContent = dark ? 'Light Mode' : 'Dark Mode'; };
-  document.documentElement.dataset.theme = localStorage.getItem('atg-theme') || 'light';
-  $('themeToggle').textContent = document.documentElement.dataset.theme === 'dark' ? 'Light Mode' : 'Dark Mode';
-  $('dateFilter').value = '';
-  $('viewFilter').value = 'all';
-  ['dateFilter','stageFilter','viewFilter'].forEach(id=>$(id).onchange=renderMatches);
-  $('resetFilters').onclick=()=>{ $('dateFilter').value=''; $('stageFilter').value='all'; $('viewFilter').value='all'; renderMatches(); };
-  $('refreshBtn').onclick=renderAll; $('adminOpen').onclick=openAdmin; $('unlockBtn').onclick=unlock; $('lockBtn').onclick=lockAdmin;
-  $('passcodeInput').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); unlock(); } });
-  document.querySelectorAll('[value="close"]').forEach(btn => btn.addEventListener('click', closeAdmin));
-  $('savePicksBtn').onclick=savePicks; $('saveResultsBtn').onclick=saveResults; $('saveOverridesBtn').onclick=saveOverrides;
-  $('clearBtn').onclick=clearData;
-  document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('.tab,.tab-panel').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); $(btn.dataset.tab).classList.add('active'); });
-}
-
-function formatDate(d){ return new Date(`${d}T12:00:00`).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
-function formatDateTime(d){ if(!d) return ''; return new Date(d).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'}); }
-function escapeHtml(s){ return String(s ?? '').replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-
-wireEvents();
-(async () => {
-  await initFirebase();
-  await loadState();
+  bind();
+  renderFilters();
+  renderAll();
 })();
