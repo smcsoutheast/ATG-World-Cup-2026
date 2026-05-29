@@ -43,8 +43,8 @@
   }
 
   function initFirebase(){
-    if(!window.ATG_FIREBASE_CONFIG){ setSyncStatus('Local mode. Firebase config missing.', true); return; }
-    if(!window.firebase || !firebase.firestore){ setSyncStatus('Local mode. Firebase scripts did not load.', true); return; }
+    if(!window.ATG_FIREBASE_CONFIG){ setSyncStatus('Firebase config missing. Upload index.html from this ZIP and hard refresh.', true); return; }
+    if(!window.firebase || !firebase.firestore){ setSyncStatus('Firebase scripts did not load. Check internet access or script blocking.', true); return; }
     try{
       if(!firebase.apps.length) firebase.initializeApp(window.ATG_FIREBASE_CONFIG);
       db = firebase.firestore();
