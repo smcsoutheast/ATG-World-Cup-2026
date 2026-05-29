@@ -79,3 +79,15 @@ The importer supports:
 - group
 - status
 
+
+
+Admin access passcodes
+
+Super Admin: ATG2026ADMIN
+Steve & Josh: SJ2026
+Southeast: SE2026
+Texas: TX2026
+Midwest: MW2026
+Mid-Atlantic: MA2026
+
+If the Admin button does not open on mobile, hard refresh the page and clear browser cache. This build includes a dialog fallback for GitHub Pages and iOS browsers.

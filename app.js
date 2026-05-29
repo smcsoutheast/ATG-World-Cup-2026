@@ -355,7 +355,7 @@ async function unlock(){
     const regionId = Object.entries(CONFIG.passcodes.regions).find(([,pass])=>pass===code)?.[0];
     if(regionId) role = { type:'region', regionId, name: CONFIG.regions.find(r=>r.id===regionId).name };
   }
-  if(!role){ $('loginError').textContent = 'Invalid passcode.'; return; }
+  if(!role){ $('loginError').textContent = 'Invalid passcode. Super admin default: ATG2026ADMIN. Region examples: SE2026, TX2026, MW2026, MA2026, SJ2026.'; return; }
   $('loginPanel').classList.add('hidden'); $('entryPanel').classList.remove('hidden'); $('activeRole').textContent = `Unlocked: ${role.name}`;
   $('regionalEntry').classList.toggle('hidden', role.type !== 'region'); $('superAdmin').classList.toggle('hidden', role.type !== 'admin');
   renderAdminForms();
@@ -463,6 +463,36 @@ function exportSave(){ $('importText').value = JSON.stringify(state,null,2); }
 async function importSave(){ try{ state = normalizeState(JSON.parse($('importText').value)); await saveState(role.name, 'Imported full save data'); }catch(err){ alert('Invalid JSON.'); } }
 async function clearData(){ if(confirm('Clear all shared data and reset to defaults?')){ state=clone(DEFAULT_STATE); await saveState(role.name, 'Cleared all shared data'); } }
 
+function openAdmin(){
+  const dlg = $('adminDialog');
+  if(!dlg) return;
+  $('loginError').textContent = '';
+  try{
+    if(typeof dlg.showModal === 'function' && !dlg.open) dlg.showModal();
+    else dlg.setAttribute('open','');
+  }catch(err){
+    dlg.setAttribute('open','');
+  }
+  dlg.classList.add('open');
+  setTimeout(() => $('passcodeInput')?.focus(), 50);
+}
+
+function closeAdmin(){
+  const dlg = $('adminDialog');
+  if(!dlg) return;
+  dlg.classList.remove('open');
+  try{ if(typeof dlg.close === 'function') dlg.close(); }
+  catch(err){ dlg.removeAttribute('open'); }
+}
+
+function lockAdmin(){
+  role = null;
+  $('entryPanel').classList.add('hidden');
+  $('loginPanel').classList.remove('hidden');
+  $('passcodeInput').value = '';
+  $('loginError').textContent = 'Admin locked.';
+}
+
 function wireEvents(){
   $('themeToggle').onclick = () => { const d=document.documentElement; const dark=d.dataset.theme!=='dark'; d.dataset.theme=dark?'dark':'light'; localStorage.setItem('atg-theme', d.dataset.theme); $('themeToggle').textContent = dark ? 'Light Mode' : 'Dark Mode'; };
   document.documentElement.dataset.theme = localStorage.getItem('atg-theme') || 'light';
@@ -471,7 +501,9 @@ function wireEvents(){
   $('viewFilter').value = 'all';
   ['dateFilter','stageFilter','viewFilter'].forEach(id=>$(id).onchange=renderMatches);
   $('resetFilters').onclick=()=>{ $('dateFilter').value=''; $('stageFilter').value='all'; $('viewFilter').value='all'; renderMatches(); };
-  $('refreshBtn').onclick=renderAll; $('adminOpen').onclick=()=>$('adminDialog').showModal(); $('unlockBtn').onclick=unlock; $('lockBtn').onclick=()=>location.reload();
+  $('refreshBtn').onclick=renderAll; $('adminOpen').onclick=openAdmin; $('unlockBtn').onclick=unlock; $('lockBtn').onclick=lockAdmin;
+  $('passcodeInput').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); unlock(); } });
+  document.querySelectorAll('[value="close"]').forEach(btn => btn.addEventListener('click', closeAdmin));
   $('savePicksBtn').onclick=savePicks; $('saveResultsBtn').onclick=saveResults; $('saveOverridesBtn').onclick=saveOverrides;
   $('loadDefaultScheduleBtn').onclick=loadDefaultSchedule; $('importGamesBtn').onclick=importGames; $('exportGamesBtn').onclick=exportCurrentGames; $('exportBtn').onclick=exportSave; $('importBtn').onclick=importSave; $('clearBtn').onclick=clearData;
   $('exportCsvBtn').onclick=exportStandingsCsv; $('printPdfBtn').onclick=()=>window.print();
