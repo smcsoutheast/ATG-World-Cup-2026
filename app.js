@@ -151,7 +151,7 @@ function normalizeState(input){
   return {
     ...DEFAULT_STATE,
     ...input,
-    matches: Array.isArray(input.matches) ? input.matches.map(normalizeMatch) : CONFIG.matches.map(normalizeMatch),
+    matches: Array.isArray(input.matches) && input.matches.length ? input.matches.map(normalizeMatch) : CONFIG.matches.map(normalizeMatch),
     picks: input.picks || {},
     results: input.results || {},
     overrides: input.overrides || {}
@@ -314,7 +314,7 @@ function renderDashboard(){
 function renderBracket(){
   const rounds = {};
   state.matches.filter(m=>stageType(m)==='knockout').forEach(m => { const key = m.stageLabel || m.stage || 'Knockout'; (rounds[key] ||= []).push(m); });
-  $('bracketGrid').innerHTML = Object.keys(rounds).length ? Object.entries(rounds).map(([round,matches])=>`<div class="bracket-round"><h3>${escapeHtml(round)}</h3>${matches.map(m=>`<div class="bracket-match"><strong>${escapeHtml(m.home)}</strong><br>vs<br><strong>${escapeHtml(m.away)}</strong><br><span class="muted">${formatDate(m.date)} ${escapeHtml(m.time||'')} ET</span></div>`).join('')}</div>`).join('') : '<p class="muted">Import knockout matches to display the bracket.</p>';
+  $('bracketGrid').innerHTML = Object.keys(rounds).length ? Object.entries(rounds).map(([round,matches])=>`<div class="bracket-round"><h3>${escapeHtml(round)}</h3>${matches.map(m=>`<div class="bracket-match"><strong>${escapeHtml(m.home)}</strong><br>vs<br><strong>${escapeHtml(m.away)}</strong><br><span class="muted">${formatDate(m.date)} ${escapeHtml(m.time||'')} ET</span></div>`).join('')}</div>`).join('') : '<p class="muted">Knockout matches will display here from the built-in schedule.</p>';
 }
 
 function renderAdminForms(){
@@ -390,77 +390,6 @@ async function saveOverrides(){
   await saveState(role.name, 'Saved admin overrides');
 }
 
-function parseGames(raw){
-  const text = raw.trim();
-  if(!text) return [];
-  if(text.startsWith('[')) return JSON.parse(text).map(normalizeGame);
-  const lines = text.split(/\r?\n/).filter(Boolean);
-  const headers = lines.shift().split(',').map(h=>h.trim().toLowerCase());
-  return lines.map(line => {
-    const cols = splitCsv(line); const obj = {};
-    headers.forEach((h,i)=>obj[h]=cols[i]?.trim());
-    return normalizeGame(obj);
-  });
-}
-function splitCsv(line){
-  const out = [];
-  let cur = '';
-  let quoted = false;
-  for(let i=0;i<line.length;i++){
-    const ch = line[i];
-    if(ch === '"'){
-      if(quoted && line[i+1] === '"'){ cur += '"'; i++; }
-      else quoted = !quoted;
-    }else if(ch === ',' && !quoted){
-      out.push(cur);
-      cur = '';
-    }else cur += ch;
-  }
-  out.push(cur);
-  return out.map(v=>v.trim());
-}
-function normalizeGame(g){
-  const id = g.matchId || g.matchid || g.match_number || g.matchnumber || g.id || g['match id'] || g['match number'];
-  const date = g.date || g.gameDate || g.gamedate || g['game date'];
-  const time = g.timeET || g.timeEt || g.time_et || g.time || g['game time eastern'] || g['game time'];
-  const home = g.homeTeam || g.hometeam || g.team_a || g.home || g['home team'];
-  const away = g.awayTeam || g.awayteam || g.team_b || g.away || g['away team'];
-  const venue = [g.venue, g.city, g.country].filter(Boolean).join(', ') || '';
-  const rawStage = g.stage || g.stageLabel || 'Group Stage';
-  const stage = normalizeStage(rawStage);
-  const type = stage === 'Group Stage' ? 'group' : 'knockout';
-  const group = g.group ? (type === 'group' && !String(g.group).toLowerCase().startsWith('group') ? `Group ${g.group}` : g.group) : (type === 'knockout' ? stage : '');
-  if(!id || !date || !time || !home || !away) throw new Error('Each game needs match id, game date, game time eastern, home team, and away team.');
-  return { id:String(id), matchNumber:id, date, time, timeET:time, timeLocal:g.time_local || '', stage, stageType:type, stageLabel:stage, group, home, away, venue, city:g.city || '', country:g.country || '', status:g.status || '' };
-}
-async function loadDefaultSchedule(){
-  state.matches = structuredClone(CONFIG.matches).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-  await saveState(role.name, `Loaded bundled 104-match schedule`);
-  $('dateFilter').value = '';
-  $('viewFilter').value = 'all';
-  renderAll();
-}
-
-async function importGames(){
-  try{
-    const games = parseGames($('gameImportText').value);
-    const existing = new Map(state.matches.map(m=>[m.id,m]));
-    games.forEach(g=>existing.set(g.id, { ...existing.get(g.id), ...g }));
-    state.matches = [...existing.values()].sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-    await saveState(role.name, `Imported ${games.length} matches`);
-    $('dateFilter').value = '';
-    $('viewFilter').value = 'all';
-    renderAll();
-  }catch(err){ alert(err.message); }
-}
-
-function exportCurrentGames(){ download('atg-games.csv', toCsv(state.matches.map(m=>({matchId:m.id,date:m.date,timeET:m.time,homeTeam:m.home,awayTeam:m.away,venue:m.venue,stage:m.stageLabel || m.stage,group:m.group})))); }
-function exportStandingsCsv(){ download('atg-standings.csv', toCsv(calculateStandings().map((r,i)=>({Rank:i+1,Region:r.region.name,P:r.p,W:r.w,D:r.d,L:r.l,GF:r.gf,GA:r.ga,GD:r.gd,Pts:r.pts,Form:r.form.slice(-5).join('')})))); }
-function toCsv(rows){ if(!rows.length) return ''; const h=Object.keys(rows[0]); return [h.join(','),...rows.map(r=>h.map(k=>`"${String(r[k]??'').replaceAll('"','""')}"`).join(','))].join('\n'); }
-function download(name, content){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:'text/csv'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
-
-function exportSave(){ $('importText').value = JSON.stringify(state,null,2); }
-async function importSave(){ try{ state = normalizeState(JSON.parse($('importText').value)); await saveState(role.name, 'Imported full save data'); }catch(err){ alert('Invalid JSON.'); } }
 async function clearData(){ if(confirm('Clear all shared data and reset to defaults?')){ state=clone(DEFAULT_STATE); await saveState(role.name, 'Cleared all shared data'); } }
 
 function openAdmin(){
@@ -505,9 +434,7 @@ function wireEvents(){
   $('passcodeInput').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); unlock(); } });
   document.querySelectorAll('[value="close"]').forEach(btn => btn.addEventListener('click', closeAdmin));
   $('savePicksBtn').onclick=savePicks; $('saveResultsBtn').onclick=saveResults; $('saveOverridesBtn').onclick=saveOverrides;
-  $('loadDefaultScheduleBtn').onclick=loadDefaultSchedule; $('importGamesBtn').onclick=importGames; $('exportGamesBtn').onclick=exportCurrentGames; $('exportBtn').onclick=exportSave; $('importBtn').onclick=importSave; $('clearBtn').onclick=clearData;
-  $('exportCsvBtn').onclick=exportStandingsCsv; $('printPdfBtn').onclick=()=>window.print();
-  $('csvFileInput').onchange = async e => { const file=e.target.files[0]; if(file) $('gameImportText').value = await file.text(); };
+  $('clearBtn').onclick=clearData;
   document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('.tab,.tab-panel').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); $(btn.dataset.tab).classList.add('active'); });
 }
 

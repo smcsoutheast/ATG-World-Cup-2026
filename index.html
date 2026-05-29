@@ -44,7 +44,6 @@
 
     <section class="section-card">
       <div class="section-heading"><div><p class="eyebrow">Leaderboard</p><h2>Standings</h2></div><span id="lastUpdated" class="muted"></span></div>
-      <div class="button-row export-row"><button id="exportCsvBtn" class="ghost-btn" type="button">Export Excel CSV</button><button id="printPdfBtn" class="ghost-btn" type="button">Print PDF</button></div>
       <div class="table-wrap"><table id="standingsTable" class="standings-table"><thead><tr><th>Rank</th><th>Region</th><th>P</th><th>W</th><th>D</th><th>L</th><th class="wide-only">GF</th><th class="wide-only">GA</th><th>GD</th><th>Pts</th><th class="wide-only">Form</th></tr></thead><tbody></tbody></table></div>
     </section>
 
@@ -67,9 +66,8 @@
       <div id="regionalEntry" class="hidden"><h3>Submit regional picks</h3><p class="muted">Picks lock at kickoff time in Eastern Time. Group stage allows draw. Knockout does not.</p><div id="pickFormList" class="admin-list"></div><button id="savePicksBtn" class="primary-btn" type="button">Save Picks</button></div>
       <div id="superAdmin" class="hidden">
         <h3>Super admin</h3>
-        <div class="tabs"><button class="tab active" data-tab="scoresTab" type="button">Scores</button><button class="tab" data-tab="importTab" type="button">Import</button><button class="tab" data-tab="overrideTab" type="button">Override</button><button class="tab" data-tab="auditTab" type="button">Audit</button></div>
+        <div class="tabs"><button class="tab active" data-tab="scoresTab" type="button">Scores</button><button class="tab" data-tab="overrideTab" type="button">Override</button><button class="tab" data-tab="auditTab" type="button">Audit</button></div>
         <div id="scoresTab" class="tab-panel active"><h4>Match results</h4><div id="resultFormList" class="admin-list"></div><button id="saveResultsBtn" class="primary-btn" type="button">Save Results</button></div>
-        <div id="importTab" class="tab-panel"><h4>Manual game import</h4><p class="muted">Paste JSON or CSV. Required fields: match id, game date, game time eastern, home team, away team, venue. Stage values are pulled from the schedule CSV.</p><textarea id="gameImportText" rows="9" placeholder="matchId,date,timeET,homeTeam,awayTeam,venue,stage,group"></textarea><input id="csvFileInput" type="file" accept=".csv,text/csv" /><div class="button-row"><button id="loadDefaultScheduleBtn" class="primary-btn" type="button">Load 104 Match Schedule</button><button id="importGamesBtn" class="ghost-btn" type="button">Import Games</button><button id="exportGamesBtn" class="ghost-btn" type="button">Export Current Games</button></div><h4>Full save data</h4><textarea id="importText" rows="7" placeholder="Paste exported JSON here"></textarea><div class="button-row"><button id="exportBtn" class="ghost-btn" type="button">Export Save Data</button><button id="importBtn" class="ghost-btn" type="button">Import Save Data</button></div></div>
         <div id="overrideTab" class="tab-panel"><h4>Admin override panel</h4><p class="muted">Change any region pick, lock status, match status, or score.</p><div id="overrideList" class="admin-list"></div><button id="saveOverridesBtn" class="primary-btn" type="button">Save Overrides</button><button id="clearBtn" class="danger-btn" type="button">Clear Shared Data</button></div>
         <div id="auditTab" class="tab-panel"><h4>Audit log</h4><div id="auditLog" class="audit-log"></div><h4>Leaderboard history</h4><div id="historyLog" class="audit-log"></div></div>
       </div>

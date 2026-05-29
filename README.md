@@ -1,21 +1,8 @@
 # Around the Grounds, FIFA World Cup 2026 Edition
 
-Static GitHub Pages project for the SMC staff prediction competition.
+Static GitHub Pages app for the SMC staff prediction competition.
 
-## What is included
-
-- Full 104-match schedule from the uploaded CSV
-- Firebase Firestore live sync
-- Regional passcode entry
-- Super admin score entry
-- Super admin CSV import
-- One-click bundled 104-match schedule reload
-- Standings with P, W, D, L, GF, GA, GD, Pts, and Form
-- Daily match cards with correct-pick highlighting
-- CSV export and print/PDF option
-- Firestore security rules file
-
-## Upload to GitHub Pages
+## Upload to GitHub
 
 Upload these files to the repository root:
 
@@ -24,38 +11,23 @@ Upload these files to the repository root:
 - app.js
 - data.js
 - firestore.rules
-- world-cup-2026-schedule.csv
-- README.md
+- .nojekyll
 
-## Firebase setup
+The full match schedule is built into data.js. No schedule import is needed.
+
+## Firebase
 
 1. Open Firebase Console.
-2. Select project: atg-world-cup-26.
-3. Create Firestore Database if it does not exist.
-4. Open Firestore Database, Rules.
-5. Paste the contents of firestore.rules.
-6. Publish.
-7. Open the GitHub Pages site and hard refresh.
+2. Open project atg-world-cup-26.
+3. Create or open Firestore Database.
+4. Paste firestore.rules into Firestore Rules.
+5. Publish rules.
 
-## Important Firebase note
+## Admin
 
-If your Firestore database already has old match data, the site will load the saved Firebase data first.
+Super admin passcode: ATG2026ADMIN
 
-To load the full 104-match schedule:
-
-1. Open Admin.
-2. Enter super admin passcode.
-3. Open Import tab.
-4. Click Load 104 Match Schedule.
-5. Confirm it saves to Firebase.
-6. Refresh on a second device.
-
-## Passcodes
-
-Super Admin:
-ATG2026ADMIN
-
-Regions:
+Regional passcodes:
 
 - Steve & Josh: SJ2026
 - Southeast: SE2026
@@ -63,31 +35,10 @@ Regions:
 - Midwest: MW2026
 - Mid-Atlantic: MA2026
 
-## CSV field support
+## Changes in this build
 
-The importer supports:
-
-- match_number or matchId
-- date
-- time_et or timeET
-- team_a or homeTeam
-- team_b or awayTeam
-- venue
-- city
-- country
-- stage
-- group
-- status
-
-
-
-Admin access passcodes
-
-Super Admin: ATG2026ADMIN
-Steve & Josh: SJ2026
-Southeast: SE2026
-Texas: TX2026
-Midwest: MW2026
-Mid-Atlantic: MA2026
-
-If the Admin button does not open on mobile, hard refresh the page and clear browser cache. This build includes a dialog fallback for GitHub Pages and iOS browsers.
+- Removed public Excel CSV export.
+- Removed public PDF print button.
+- Removed super admin import and export tools.
+- Added the full schedule directly through data.js.
+- Kept score entry, override tools, audit log, and live Firebase sync.
