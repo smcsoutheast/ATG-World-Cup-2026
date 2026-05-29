@@ -21,7 +21,7 @@
   let firebaseReady = false;
   let applyingRemote = false;
 
-  function defaultState(){ return { picks:{}, scores:{}, updatedAt:null }; }
+  function defaultState(){ return { picks:{}, scores:{}, teams:{}, updatedAt:null }; }
 
   function loadState(){
     try { return Object.assign(defaultState(), JSON.parse(localStorage.getItem(KEY) || '{}')); }
@@ -60,6 +60,7 @@
         applyingRemote = true;
         state.picks = data.picks || {};
         state.scores = data.scores || {};
+        state.teams = data.teams || {};
         state.updatedAt = data.updatedAt || null;
         saveLocal();
         applyingRemote = false;
@@ -89,6 +90,7 @@
     docRef.set({
       picks: state.picks || {},
       scores: state.scores || {},
+      teams: state.teams || {},
       updatedAt: state.updatedAt || new Date().toISOString()
     }, { merge:true }).then(() => {
       setSyncStatus('Saved to Firebase.');
@@ -98,7 +100,7 @@
     });
   }
 
-  function matches(){ return (window.ATG_SCHEDULE || []).map(m => Object.assign({}, m, state.scores[m.id] || {})); }
+  function matches(){ return (window.ATG_SCHEDULE || []).map(m => Object.assign({}, m, state.teams[m.id] || {}, state.scores[m.id] || {})); }
   function isKnockout(stage){ return stage !== 'Group Stage'; }
   function resultFor(m){
     if(m.homeScore === null || m.homeScore === undefined || m.awayScore === null || m.awayScore === undefined || m.homeScore === '' || m.awayScore === '') return null;
@@ -202,14 +204,29 @@
     renderAll();
   }
   function renderAdmin(){
-    if(!adminUnlocked){ $('adminScores').innerHTML = ''; return; }
-    $('adminScores').innerHTML = matches().map(m => `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div><input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Save</button></div>`).join('');
+    if(!adminUnlocked){ $('adminTools').innerHTML = ''; $('adminScores').innerHTML = ''; return; }
+    $('adminTools').innerHTML = `<div class="admin-actions"><button id="resetLocal" type="button" class="ghost small">Reset local data</button></div>`;
+    $('adminScores').innerHTML = matches().map(m => {
+      const knockoutFields = isKnockout(m.stage) ? `<input data-home-team="${esc(m.id)}" value="${esc(m.homeTeam)}" placeholder="Home team"><input data-away-team="${esc(m.id)}" value="${esc(m.awayTeam)}" placeholder="Away team"><button data-save-team="${esc(m.id)}" type="button">Teams</button>` : '';
+      return `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div>${knockoutFields}<input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Score</button></div>`;
+    }).join('');
     document.querySelectorAll('[data-save-score]').forEach(b => b.addEventListener('click', () => saveScore(b.dataset.saveScore)));
+    document.querySelectorAll('[data-save-team]').forEach(b => b.addEventListener('click', () => saveTeams(b.dataset.saveTeam)));
   }
+
   function saveScore(id){
     const h = document.querySelector(`[data-home="${CSS.escape(id)}"]`).value;
     const a = document.querySelector(`[data-away="${CSS.escape(id)}"]`).value;
     state.scores[id] = { homeScore: h === '' ? null : Number(h), awayScore: a === '' ? null : Number(a) };
+    saveState();
+    renderAll();
+    renderAdmin();
+  }
+  function saveTeams(id){
+    const hEl = document.querySelector(`[data-home-team="${CSS.escape(id)}"]`);
+    const aEl = document.querySelector(`[data-away-team="${CSS.escape(id)}"]`);
+    if(!hEl || !aEl) return;
+    state.teams[id] = { homeTeam: hEl.value.trim() || 'TBD', awayTeam: aEl.value.trim() || 'TBD' };
     saveState();
     renderAll();
     renderAdmin();
@@ -234,9 +251,6 @@
       renderAdmin();
     });
     $('adminCode').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('adminUnlock').click(); }});
-    $('resetLocal').addEventListener('click', () => {
-      if(confirm('Reset local backup data on this browser? Firebase data will stay active.')){ localStorage.removeItem(KEY); location.reload(); }
-    });
   }
   function renderAll(){ renderStandings(); renderMatches(); }
   function prettyDate(d){

@@ -13,7 +13,6 @@
       <h1>Around the Grounds</h1>
       <p class="sub">FIFA World Cup 2026 prediction competition</p>
     </div>
-    <button id="adminOpen" class="ghost">Admin</button>
   </header>
 
   <main>
@@ -23,7 +22,6 @@
           <p class="eyebrow">Leaderboard</p>
           <h2>Standings</h2>
         </div>
-        <button id="resetLocal" class="ghost small">Reset local data</button>
       </div>
       <div class="table-wrap">
         <table id="standingsTable">
@@ -55,9 +53,9 @@
           <p class="eyebrow">Regional Picks</p>
           <h2>Make Selections</h2>
         </div>
-        <select id="regionSelect"></select>
       </div>
       <div class="pass-row">
+        <select id="regionSelect"></select>
         <input id="regionCode" type="password" placeholder="Region passcode">
         <button id="regionUnlock">Unlock</button>
         <span id="loginStatus"></span>
@@ -81,9 +79,12 @@
         <button id="adminUnlock" type="button">Unlock</button>
       </div>
       <p id="adminStatus"></p>
+      <div id="adminTools" class="admin-tools"></div>
       <div id="adminScores" class="admin-scores"></div>
     </form>
   </dialog>
+
+  <button id="adminOpen" class="admin-shield" aria-label="Open super admin">🛡️</button>
 
   <footer>
     Soccer Management Company, Around the Grounds, World Cup 2026 Edition
