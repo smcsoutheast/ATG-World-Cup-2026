@@ -1,6 +1,5 @@
 window.ATG_CONFIG = {
   "competitionName": "Around the Grounds - FIFA World Cup 2026 Edition",
-  "fifaSourceUrl": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=US&wtw-filter=ALL",
   "firebase": {
     "enabled": true,
     "statePath": [

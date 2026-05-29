@@ -1,4 +1,18 @@
-const CONFIG = window.ATG_CONFIG;
+const CONFIG = window.ATG_CONFIG || {};
+const clone = (value) => {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
+};
+window.addEventListener('error', (event) => {
+  const el = document.getElementById('firebaseStatus');
+  if (el) { el.textContent = 'Page error: ' + (event.message || 'unknown error'); el.classList.add('loss'); }
+  console.error('Page error:', event.error || event.message);
+});
+window.addEventListener('unhandledrejection', (event) => {
+  const el = document.getElementById('firebaseStatus');
+  if (el) { el.textContent = 'App error: ' + ((event.reason && event.reason.message) || 'unknown error'); el.classList.add('loss'); }
+  console.error('Unhandled promise rejection:', event.reason);
+});
 const $ = (id) => document.getElementById(id);
 const todayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 const nowEtMs = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })).getTime();
@@ -12,7 +26,7 @@ const DEFAULT_STATE = {
   updatedBy: 'System'
 };
 
-let state = structuredClone(DEFAULT_STATE);
+let state = clone(DEFAULT_STATE);
 let role = null;
 let db = null;
 let stateRef = null;
@@ -58,8 +72,13 @@ async function initFirebase(){
 
     setSyncStatus('Loading Firebase SDK...', 'draw');
 
-    const appModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js');
-    const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+    const withTimeout = (promise, label) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(label + ' timed out. Check internet access and Firebase CDN access.')), 10000))
+    ]);
+
+    const appModule = await withTimeout(import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js'), 'Firebase app SDK');
+    const firestoreModule = await withTimeout(import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'), 'Firebase Firestore SDK');
 
     firebaseApi = {
       initializeApp: appModule.initializeApp,
@@ -88,8 +107,7 @@ async function initFirebase(){
   }catch(err){
     useFirebase = false;
     console.error('Firebase startup failed:', err);
-    setSyncStatus('Firebase failed to load', 'loss');
-    alert('Firebase failed to load. This is usually caused by blocked Firebase scripts, an incorrect Firebase config, or GitHub Pages serving an older cached file. Open the browser console for the exact error.');
+    setSyncStatus('Firebase failed: ' + (err.message || 'SDK load error'), 'loss');
     return false;
   }
 }
@@ -117,8 +135,7 @@ async function loadState(){
     }catch(err){
       console.error('Firebase load failed:', err);
       useFirebase = false;
-      setSyncStatus('Firebase failed. Local only', 'loss');
-      alert('Firebase failed to load. Data will not sync across devices until Firestore rules and config are fixed.');
+      setSyncStatus('Firebase read failed: ' + (err.message || 'Local only'), 'loss');
       const saved = localStorage.getItem('atg-state');
       if(saved) state = normalizeState(JSON.parse(saved));
     }
@@ -130,6 +147,7 @@ async function loadState(){
 }
 
 function normalizeState(input){
+  input = input || {};
   return {
     ...DEFAULT_STATE,
     ...input,
@@ -443,7 +461,7 @@ function download(name, content){ const a=document.createElement('a'); a.href=UR
 
 function exportSave(){ $('importText').value = JSON.stringify(state,null,2); }
 async function importSave(){ try{ state = normalizeState(JSON.parse($('importText').value)); await saveState(role.name, 'Imported full save data'); }catch(err){ alert('Invalid JSON.'); } }
-async function clearData(){ if(confirm('Clear all shared data and reset to defaults?')){ state=structuredClone(DEFAULT_STATE); await saveState(role.name, 'Cleared all shared data'); } }
+async function clearData(){ if(confirm('Clear all shared data and reset to defaults?')){ state=clone(DEFAULT_STATE); await saveState(role.name, 'Cleared all shared data'); } }
 
 function wireEvents(){
   $('themeToggle').onclick = () => { const d=document.documentElement; const dark=d.dataset.theme!=='dark'; d.dataset.theme=dark?'dark':'light'; localStorage.setItem('atg-theme', d.dataset.theme); $('themeToggle').textContent = dark ? 'Light Mode' : 'Dark Mode'; };
