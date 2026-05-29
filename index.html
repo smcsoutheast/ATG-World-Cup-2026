@@ -139,6 +139,17 @@
             <button id="saveResultsBtn" class="primary-btn" type="button">Save Results</button>
           </div>
           <div>
+            <h4>Firebase status</h4>
+            <p id="firebaseStatus" class="status-pill">Local mode</p>
+
+            <h4>Manual game import</h4>
+            <p class="muted">Paste a JSON array. Fields accepted: id or matchId, date, time, stage, group, home, away, venue.</p>
+            <textarea id="gameImportText" rows="9" placeholder='[{"id":"m001","date":"2026-06-11","time":"15:00","stage":"group","group":"Group A","home":"Mexico","away":"South Africa","venue":"Estadio Azteca"}]'></textarea>
+            <div class="button-row">
+              <button id="importGamesBtn" class="primary-btn" type="button">Import Games</button>
+              <button id="exportGamesBtn" class="ghost-btn" type="button">Export Current Games</button>
+            </div>
+
             <h4>Data tools</h4>
             <button id="exportBtn" class="ghost-btn" type="button">Export Save Data</button>
             <label class="file-label">
@@ -146,7 +157,7 @@
               <textarea id="importText" rows="9" placeholder="Paste exported JSON here"></textarea>
             </label>
             <button id="importBtn" class="ghost-btn" type="button">Import</button>
-            <button id="clearBtn" class="danger-btn" type="button">Clear Local Data</button>
+            <button id="clearBtn" class="danger-btn" type="button">Clear Shared Data</button>
           </div>
         </div>
       </div>
@@ -158,6 +169,6 @@
   </footer>
 
   <script src="data.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

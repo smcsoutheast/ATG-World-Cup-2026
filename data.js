@@ -1,6 +1,19 @@
 window.ATG_CONFIG = {
   competitionName: 'Around the Grounds - FIFA World Cup 2026 Edition',
   fifaSourceUrl: 'https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=US&wtw-filter=ALL',
+  firebase: {
+    enabled: false,
+    collection: 'around-the-grounds',
+    document: 'world-cup-2026',
+    config: {
+      apiKey: 'PASTE_FIREBASE_API_KEY',
+      authDomain: 'PASTE_PROJECT_ID.firebaseapp.com',
+      projectId: 'PASTE_PROJECT_ID',
+      storageBucket: 'PASTE_PROJECT_ID.firebasestorage.app',
+      messagingSenderId: 'PASTE_SENDER_ID',
+      appId: 'PASTE_APP_ID'
+    }
+  },
   passcodes: {
     superAdmin: 'SMC2026ADMIN',
     regions: {
