@@ -5,7 +5,6 @@ Static GitHub Pages project for the SMC staff prediction competition.
 ## What is included
 
 - Full 104-match schedule from the uploaded CSV
-- Match cards styled after the clean utility layout of worldcup2026schedules.com
 - Firebase Firestore live sync
 - Regional passcode entry
 - Super admin score entry
@@ -79,12 +78,4 @@ The importer supports:
 - stage
 - group
 - status
-- source
 
-## Data source notes
-
-The included schedule was generated from the uploaded CSV file named world-cup-2026-schedule (1).csv.
-
-The design is inspired by worldcup2026schedules.com, using a fast schedule utility layout, clean cards, tournament summary styling, and schedule-first navigation.
-
-This project is not affiliated with FIFA.

@@ -1,7 +1,6 @@
 window.ATG_CONFIG = {
   "competitionName": "Around the Grounds - FIFA World Cup 2026 Edition",
   "fifaSourceUrl": "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=US&wtw-filter=ALL",
-  "scheduleSourceUrl": "https://worldcup2026schedules.com/",
   "firebase": {
     "enabled": true,
     "statePath": [
@@ -89,7 +88,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "13:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group A",
       "home": "Mexico",
@@ -97,8 +97,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio Azteca, Mexico City, Mexico",
       "city": "Mexico City",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "2",
@@ -107,7 +106,8 @@ window.ATG_CONFIG = {
       "time": "22:00",
       "timeET": "22:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group A",
       "home": "Korea Republic",
@@ -115,8 +115,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio Akron, Guadalajara, Mexico",
       "city": "Guadalajara",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "3",
@@ -125,7 +124,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "15:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group B",
       "home": "Canada",
@@ -133,8 +133,7 @@ window.ATG_CONFIG = {
       "venue": "BMO Field, Toronto, Canada",
       "city": "Toronto",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "4",
@@ -143,7 +142,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group D",
       "home": "United States",
@@ -151,8 +151,7 @@ window.ATG_CONFIG = {
       "venue": "SoFi Stadium, Los Angeles, United States",
       "city": "Los Angeles",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "5",
@@ -161,7 +160,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "21:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group C",
       "home": "Haiti",
@@ -169,8 +169,7 @@ window.ATG_CONFIG = {
       "venue": "Gillette Stadium, Boston, United States",
       "city": "Boston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "6",
@@ -179,16 +178,16 @@ window.ATG_CONFIG = {
       "time": "00:00",
       "timeET": "00:00",
       "timeLocal": "21:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group D",
       "home": "Australia",
-      "away": "Türkiye",
+      "away": "T\u00fcrkiye",
       "venue": "BC Place, Vancouver, Canada",
       "city": "Vancouver",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "7",
@@ -197,7 +196,8 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group C",
       "home": "Brazil",
@@ -205,8 +205,7 @@ window.ATG_CONFIG = {
       "venue": "MetLife Stadium, New York/New Jersey, United States",
       "city": "New York/New Jersey",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "8",
@@ -215,7 +214,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group B",
       "home": "Qatar",
@@ -223,8 +223,7 @@ window.ATG_CONFIG = {
       "venue": "Levi's Stadium, San Francisco Bay Area, United States",
       "city": "San Francisco Bay Area",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "9",
@@ -233,16 +232,16 @@ window.ATG_CONFIG = {
       "time": "19:00",
       "timeET": "19:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group E",
-      "home": "Côte d’Ivoire",
+      "home": "C\u00f4te d\u2019Ivoire",
       "away": "Ecuador",
       "venue": "Lincoln Financial Field, Philadelphia, United States",
       "city": "Philadelphia",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "10",
@@ -251,16 +250,16 @@ window.ATG_CONFIG = {
       "time": "13:00",
       "timeET": "13:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group E",
       "home": "Germany",
-      "away": "Curaçao",
+      "away": "Cura\u00e7ao",
       "venue": "NRG Stadium, Houston, United States",
       "city": "Houston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "11",
@@ -269,7 +268,8 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "15:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group F",
       "home": "Netherlands",
@@ -277,8 +277,7 @@ window.ATG_CONFIG = {
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "12",
@@ -287,7 +286,8 @@ window.ATG_CONFIG = {
       "time": "22:00",
       "timeET": "22:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group F",
       "home": "Sweden",
@@ -295,8 +295,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio BBVA, Monterrey, Mexico",
       "city": "Monterrey",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "13",
@@ -305,7 +304,8 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group H",
       "home": "Saudi Arabia",
@@ -313,8 +313,7 @@ window.ATG_CONFIG = {
       "venue": "Hard Rock Stadium, Miami, United States",
       "city": "Miami",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "14",
@@ -323,7 +322,8 @@ window.ATG_CONFIG = {
       "time": "12:00",
       "timeET": "12:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group H",
       "home": "Spain",
@@ -331,8 +331,7 @@ window.ATG_CONFIG = {
       "venue": "Mercedes-Benz Stadium, Atlanta, United States",
       "city": "Atlanta",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "15",
@@ -341,7 +340,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group G",
       "home": "Iran",
@@ -349,8 +349,7 @@ window.ATG_CONFIG = {
       "venue": "SoFi Stadium, Los Angeles, United States",
       "city": "Los Angeles",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "16",
@@ -359,7 +358,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group G",
       "home": "Belgium",
@@ -367,8 +367,7 @@ window.ATG_CONFIG = {
       "venue": "Lumen Field, Seattle, United States",
       "city": "Seattle",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "17",
@@ -377,7 +376,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "15:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group I",
       "home": "France",
@@ -385,8 +385,7 @@ window.ATG_CONFIG = {
       "venue": "MetLife Stadium, New York/New Jersey, United States",
       "city": "New York/New Jersey",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "18",
@@ -395,7 +394,8 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group I",
       "home": "Iraq",
@@ -403,8 +403,7 @@ window.ATG_CONFIG = {
       "venue": "Gillette Stadium, Boston, United States",
       "city": "Boston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "19",
@@ -413,7 +412,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group J",
       "home": "Argentina",
@@ -421,8 +421,7 @@ window.ATG_CONFIG = {
       "venue": "Arrowhead Stadium, Kansas City, United States",
       "city": "Kansas City",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "20",
@@ -431,7 +430,8 @@ window.ATG_CONFIG = {
       "time": "00:00",
       "timeET": "00:00",
       "timeLocal": "21:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group J",
       "home": "Austria",
@@ -439,8 +439,7 @@ window.ATG_CONFIG = {
       "venue": "Levi's Stadium, San Francisco Bay Area, United States",
       "city": "San Francisco Bay Area",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "21",
@@ -449,7 +448,8 @@ window.ATG_CONFIG = {
       "time": "19:00",
       "timeET": "19:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group L",
       "home": "Ghana",
@@ -457,8 +457,7 @@ window.ATG_CONFIG = {
       "venue": "BMO Field, Toronto, Canada",
       "city": "Toronto",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "22",
@@ -467,7 +466,8 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "15:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group L",
       "home": "England",
@@ -475,8 +475,7 @@ window.ATG_CONFIG = {
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "23",
@@ -485,7 +484,8 @@ window.ATG_CONFIG = {
       "time": "13:00",
       "timeET": "13:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group K",
       "home": "Portugal",
@@ -493,8 +493,7 @@ window.ATG_CONFIG = {
       "venue": "NRG Stadium, Houston, United States",
       "city": "Houston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "24",
@@ -503,7 +502,8 @@ window.ATG_CONFIG = {
       "time": "22:00",
       "timeET": "22:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group K",
       "home": "Uzbekistan",
@@ -511,8 +511,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio Azteca, Mexico City, Mexico",
       "city": "Mexico City",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "25",
@@ -521,7 +520,8 @@ window.ATG_CONFIG = {
       "time": "12:00",
       "timeET": "12:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group A",
       "home": "Czechia",
@@ -529,8 +529,7 @@ window.ATG_CONFIG = {
       "venue": "Mercedes-Benz Stadium, Atlanta, United States",
       "city": "Atlanta",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "26",
@@ -539,7 +538,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group B",
       "home": "Switzerland",
@@ -547,8 +547,7 @@ window.ATG_CONFIG = {
       "venue": "SoFi Stadium, Los Angeles, United States",
       "city": "Los Angeles",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "27",
@@ -557,7 +556,8 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "15:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group B",
       "home": "Canada",
@@ -565,8 +565,7 @@ window.ATG_CONFIG = {
       "venue": "BC Place, Vancouver, Canada",
       "city": "Vancouver",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "28",
@@ -575,7 +574,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group A",
       "home": "Mexico",
@@ -583,8 +583,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio Akron, Guadalajara, Mexico",
       "city": "Guadalajara",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "29",
@@ -593,7 +592,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "21:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group C",
       "home": "Brazil",
@@ -601,8 +601,7 @@ window.ATG_CONFIG = {
       "venue": "Lincoln Financial Field, Philadelphia, United States",
       "city": "Philadelphia",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "30",
@@ -611,7 +610,8 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group C",
       "home": "Scotland",
@@ -619,8 +619,7 @@ window.ATG_CONFIG = {
       "venue": "Gillette Stadium, Boston, United States",
       "city": "Boston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "31",
@@ -629,16 +628,16 @@ window.ATG_CONFIG = {
       "time": "23:00",
       "timeET": "23:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group D",
-      "home": "Türkiye",
+      "home": "T\u00fcrkiye",
       "away": "Paraguay",
       "venue": "Levi's Stadium, San Francisco Bay Area, United States",
       "city": "San Francisco Bay Area",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "32",
@@ -647,7 +646,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group D",
       "home": "United States",
@@ -655,8 +655,7 @@ window.ATG_CONFIG = {
       "venue": "Lumen Field, Seattle, United States",
       "city": "Seattle",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "33",
@@ -665,16 +664,16 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "16:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group E",
       "home": "Germany",
-      "away": "Côte d’Ivoire",
+      "away": "C\u00f4te d\u2019Ivoire",
       "venue": "BMO Field, Toronto, Canada",
       "city": "Toronto",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "34",
@@ -683,16 +682,16 @@ window.ATG_CONFIG = {
       "time": "20:00",
       "timeET": "20:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group E",
       "home": "Ecuador",
-      "away": "Curaçao",
+      "away": "Cura\u00e7ao",
       "venue": "Arrowhead Stadium, Kansas City, United States",
       "city": "Kansas City",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "35",
@@ -701,7 +700,8 @@ window.ATG_CONFIG = {
       "time": "13:00",
       "timeET": "13:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group F",
       "home": "Netherlands",
@@ -709,8 +709,7 @@ window.ATG_CONFIG = {
       "venue": "NRG Stadium, Houston, United States",
       "city": "Houston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "36",
@@ -719,7 +718,8 @@ window.ATG_CONFIG = {
       "time": "00:00",
       "timeET": "00:00",
       "timeLocal": "22:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group F",
       "home": "Tunisia",
@@ -727,8 +727,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio BBVA, Monterrey, Mexico",
       "city": "Monterrey",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "37",
@@ -737,7 +736,8 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group H",
       "home": "Uruguay",
@@ -745,8 +745,7 @@ window.ATG_CONFIG = {
       "venue": "Hard Rock Stadium, Miami, United States",
       "city": "Miami",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "38",
@@ -755,7 +754,8 @@ window.ATG_CONFIG = {
       "time": "12:00",
       "timeET": "12:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group H",
       "home": "Spain",
@@ -763,8 +763,7 @@ window.ATG_CONFIG = {
       "venue": "Mercedes-Benz Stadium, Atlanta, United States",
       "city": "Atlanta",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "39",
@@ -773,7 +772,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group G",
       "home": "Belgium",
@@ -781,8 +781,7 @@ window.ATG_CONFIG = {
       "venue": "SoFi Stadium, Los Angeles, United States",
       "city": "Los Angeles",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "40",
@@ -791,7 +790,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group G",
       "home": "New Zealand",
@@ -799,8 +799,7 @@ window.ATG_CONFIG = {
       "venue": "BC Place, Vancouver, Canada",
       "city": "Vancouver",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "41",
@@ -809,7 +808,8 @@ window.ATG_CONFIG = {
       "time": "20:00",
       "timeET": "20:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group I",
       "home": "Norway",
@@ -817,8 +817,7 @@ window.ATG_CONFIG = {
       "venue": "MetLife Stadium, New York/New Jersey, United States",
       "city": "New York/New Jersey",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "42",
@@ -827,7 +826,8 @@ window.ATG_CONFIG = {
       "time": "17:00",
       "timeET": "17:00",
       "timeLocal": "17:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group I",
       "home": "France",
@@ -835,8 +835,7 @@ window.ATG_CONFIG = {
       "venue": "Lincoln Financial Field, Philadelphia, United States",
       "city": "Philadelphia",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "43",
@@ -845,7 +844,8 @@ window.ATG_CONFIG = {
       "time": "13:00",
       "timeET": "13:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group J",
       "home": "Argentina",
@@ -853,8 +853,7 @@ window.ATG_CONFIG = {
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "44",
@@ -863,7 +862,8 @@ window.ATG_CONFIG = {
       "time": "23:00",
       "timeET": "23:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group J",
       "home": "Jordan",
@@ -871,8 +871,7 @@ window.ATG_CONFIG = {
       "venue": "Levi's Stadium, San Francisco Bay Area, United States",
       "city": "San Francisco Bay Area",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "45",
@@ -881,7 +880,8 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "16:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group L",
       "home": "England",
@@ -889,8 +889,7 @@ window.ATG_CONFIG = {
       "venue": "Gillette Stadium, Boston, United States",
       "city": "Boston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "46",
@@ -899,7 +898,8 @@ window.ATG_CONFIG = {
       "time": "19:00",
       "timeET": "19:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group L",
       "home": "Panama",
@@ -907,8 +907,7 @@ window.ATG_CONFIG = {
       "venue": "BMO Field, Toronto, Canada",
       "city": "Toronto",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "47",
@@ -917,7 +916,8 @@ window.ATG_CONFIG = {
       "time": "13:00",
       "timeET": "13:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group K",
       "home": "Portugal",
@@ -925,8 +925,7 @@ window.ATG_CONFIG = {
       "venue": "NRG Stadium, Houston, United States",
       "city": "Houston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "48",
@@ -935,7 +934,8 @@ window.ATG_CONFIG = {
       "time": "22:00",
       "timeET": "22:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group K",
       "home": "Colombia",
@@ -943,8 +943,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio Akron, Guadalajara, Mexico",
       "city": "Guadalajara",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "49",
@@ -953,7 +952,8 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group C",
       "home": "Scotland",
@@ -961,8 +961,7 @@ window.ATG_CONFIG = {
       "venue": "Hard Rock Stadium, Miami, United States",
       "city": "Miami",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "50",
@@ -971,7 +970,8 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group C",
       "home": "Morocco",
@@ -979,8 +979,7 @@ window.ATG_CONFIG = {
       "venue": "Mercedes-Benz Stadium, Atlanta, United States",
       "city": "Atlanta",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "51",
@@ -989,7 +988,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group B",
       "home": "Switzerland",
@@ -997,8 +997,7 @@ window.ATG_CONFIG = {
       "venue": "BC Place, Vancouver, Canada",
       "city": "Vancouver",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "52",
@@ -1007,7 +1006,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group B",
       "home": "Bosnia and Herzegovina",
@@ -1015,8 +1015,7 @@ window.ATG_CONFIG = {
       "venue": "Lumen Field, Seattle, United States",
       "city": "Seattle",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "53",
@@ -1025,7 +1024,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group A",
       "home": "Czechia",
@@ -1033,8 +1033,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio Azteca, Mexico City, Mexico",
       "city": "Mexico City",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "54",
@@ -1043,7 +1042,8 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group A",
       "home": "South Africa",
@@ -1051,8 +1051,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio BBVA, Monterrey, Mexico",
       "city": "Monterrey",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "55",
@@ -1061,16 +1060,16 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "16:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group E",
-      "home": "Curaçao",
-      "away": "Côte d’Ivoire",
+      "home": "Cura\u00e7ao",
+      "away": "C\u00f4te d\u2019Ivoire",
       "venue": "Lincoln Financial Field, Philadelphia, United States",
       "city": "Philadelphia",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "56",
@@ -1079,7 +1078,8 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "16:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group E",
       "home": "Ecuador",
@@ -1087,8 +1087,7 @@ window.ATG_CONFIG = {
       "venue": "MetLife Stadium, New York/New Jersey, United States",
       "city": "New York/New Jersey",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "57",
@@ -1097,7 +1096,8 @@ window.ATG_CONFIG = {
       "time": "19:00",
       "timeET": "19:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group F",
       "home": "Japan",
@@ -1105,8 +1105,7 @@ window.ATG_CONFIG = {
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "58",
@@ -1115,7 +1114,8 @@ window.ATG_CONFIG = {
       "time": "19:00",
       "timeET": "19:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group F",
       "home": "Tunisia",
@@ -1123,8 +1123,7 @@ window.ATG_CONFIG = {
       "venue": "Arrowhead Stadium, Kansas City, United States",
       "city": "Kansas City",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "59",
@@ -1133,16 +1132,16 @@ window.ATG_CONFIG = {
       "time": "22:00",
       "timeET": "22:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group D",
-      "home": "Türkiye",
+      "home": "T\u00fcrkiye",
       "away": "United States",
       "venue": "SoFi Stadium, Los Angeles, United States",
       "city": "Los Angeles",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "60",
@@ -1151,7 +1150,8 @@ window.ATG_CONFIG = {
       "time": "22:00",
       "timeET": "22:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group D",
       "home": "Paraguay",
@@ -1159,8 +1159,7 @@ window.ATG_CONFIG = {
       "venue": "Levi's Stadium, San Francisco Bay Area, United States",
       "city": "San Francisco Bay Area",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "61",
@@ -1169,7 +1168,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "15:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group I",
       "home": "Norway",
@@ -1177,8 +1177,7 @@ window.ATG_CONFIG = {
       "venue": "Gillette Stadium, Boston, United States",
       "city": "Boston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "62",
@@ -1187,7 +1186,8 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "15:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group I",
       "home": "Senegal",
@@ -1195,8 +1195,7 @@ window.ATG_CONFIG = {
       "venue": "BMO Field, Toronto, Canada",
       "city": "Toronto",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "63",
@@ -1205,7 +1204,8 @@ window.ATG_CONFIG = {
       "time": "23:00",
       "timeET": "23:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group G",
       "home": "Egypt",
@@ -1213,8 +1213,7 @@ window.ATG_CONFIG = {
       "venue": "Lumen Field, Seattle, United States",
       "city": "Seattle",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "64",
@@ -1223,7 +1222,8 @@ window.ATG_CONFIG = {
       "time": "23:00",
       "timeET": "23:00",
       "timeLocal": "20:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group G",
       "home": "New Zealand",
@@ -1231,8 +1231,7 @@ window.ATG_CONFIG = {
       "venue": "BC Place, Vancouver, Canada",
       "city": "Vancouver",
       "country": "Canada",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "65",
@@ -1241,7 +1240,8 @@ window.ATG_CONFIG = {
       "time": "20:00",
       "timeET": "20:00",
       "timeLocal": "19:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group H",
       "home": "Cabo Verde",
@@ -1249,8 +1249,7 @@ window.ATG_CONFIG = {
       "venue": "NRG Stadium, Houston, United States",
       "city": "Houston",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "66",
@@ -1259,7 +1258,8 @@ window.ATG_CONFIG = {
       "time": "20:00",
       "timeET": "20:00",
       "timeLocal": "18:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group H",
       "home": "Uruguay",
@@ -1267,8 +1267,7 @@ window.ATG_CONFIG = {
       "venue": "Estadio Akron, Guadalajara, Mexico",
       "city": "Guadalajara",
       "country": "Mexico",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "67",
@@ -1277,7 +1276,8 @@ window.ATG_CONFIG = {
       "time": "17:00",
       "timeET": "17:00",
       "timeLocal": "17:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group L",
       "home": "Panama",
@@ -1285,8 +1285,7 @@ window.ATG_CONFIG = {
       "venue": "MetLife Stadium, New York/New Jersey, United States",
       "city": "New York/New Jersey",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "68",
@@ -1295,7 +1294,8 @@ window.ATG_CONFIG = {
       "time": "17:00",
       "timeET": "17:00",
       "timeLocal": "17:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group L",
       "home": "Croatia",
@@ -1303,8 +1303,7 @@ window.ATG_CONFIG = {
       "venue": "Lincoln Financial Field, Philadelphia, United States",
       "city": "Philadelphia",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "69",
@@ -1313,7 +1312,8 @@ window.ATG_CONFIG = {
       "time": "22:00",
       "timeET": "22:00",
       "timeLocal": "21:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group J",
       "home": "Algeria",
@@ -1321,8 +1321,7 @@ window.ATG_CONFIG = {
       "venue": "Arrowhead Stadium, Kansas City, United States",
       "city": "Kansas City",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "70",
@@ -1331,7 +1330,8 @@ window.ATG_CONFIG = {
       "time": "22:00",
       "timeET": "22:00",
       "timeLocal": "21:00",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group J",
       "home": "Jordan",
@@ -1339,8 +1339,7 @@ window.ATG_CONFIG = {
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "71",
@@ -1349,7 +1348,8 @@ window.ATG_CONFIG = {
       "time": "19:30",
       "timeET": "19:30",
       "timeLocal": "19:30",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group K",
       "home": "Colombia",
@@ -1357,8 +1357,7 @@ window.ATG_CONFIG = {
       "venue": "Hard Rock Stadium, Miami, United States",
       "city": "Miami",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "72",
@@ -1367,7 +1366,8 @@ window.ATG_CONFIG = {
       "time": "19:30",
       "timeET": "19:30",
       "timeLocal": "19:30",
-      "stage": "group",
+      "stage": "Group Stage",
+      "stageType": "group",
       "stageLabel": "Group Stage",
       "group": "Group K",
       "home": "Congo DR",
@@ -1375,8 +1375,7 @@ window.ATG_CONFIG = {
       "venue": "Mercedes-Benz Stadium, Atlanta, United States",
       "city": "Atlanta",
       "country": "United States",
-      "status": "confirmed_group_fixture",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "confirmed_group_fixture"
     },
     {
       "id": "73",
@@ -1385,16 +1384,16 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group A Runner-up",
       "away": "Group B Runner-up",
       "venue": "SoFi Stadium, Los Angeles, United States",
       "city": "Los Angeles",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "74",
@@ -1403,16 +1402,16 @@ window.ATG_CONFIG = {
       "time": "16:30",
       "timeET": "16:30",
       "timeLocal": "16:30",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group E Winner",
       "away": "Group A/B/C/D/F 3rd Place",
       "venue": "Gillette Stadium, Boston, United States",
       "city": "Boston",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "75",
@@ -1421,16 +1420,16 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "19:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group F Winner",
       "away": "Group C Runner-up",
       "venue": "Estadio BBVA, Monterrey, Mexico",
       "city": "Monterrey",
       "country": "Mexico",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "76",
@@ -1439,16 +1438,16 @@ window.ATG_CONFIG = {
       "time": "13:00",
       "timeET": "13:00",
       "timeLocal": "12:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group C Winner",
       "away": "Group F Runner-up",
       "venue": "NRG Stadium, Houston, United States",
       "city": "Houston",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "77",
@@ -1457,16 +1456,16 @@ window.ATG_CONFIG = {
       "time": "17:00",
       "timeET": "17:00",
       "timeLocal": "17:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group I Winner",
       "away": "Group C/D/F/G/H 3rd Place",
       "venue": "MetLife Stadium, New York/New Jersey, United States",
       "city": "New York/New Jersey",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "78",
@@ -1475,16 +1474,16 @@ window.ATG_CONFIG = {
       "time": "13:00",
       "timeET": "13:00",
       "timeLocal": "12:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group E Runner-up",
       "away": "Group I Runner-up",
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "79",
@@ -1493,16 +1492,16 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "19:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group A Winner",
       "away": "Group C/E/F/H/I 3rd Place",
       "venue": "Estadio Azteca, Mexico City, Mexico",
       "city": "Mexico City",
       "country": "Mexico",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "80",
@@ -1511,16 +1510,16 @@ window.ATG_CONFIG = {
       "time": "12:00",
       "timeET": "12:00",
       "timeLocal": "12:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group L Winner",
       "away": "Group E/H/I/J/K 3rd Place",
       "venue": "Mercedes-Benz Stadium, Atlanta, United States",
       "city": "Atlanta",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "81",
@@ -1529,16 +1528,16 @@ window.ATG_CONFIG = {
       "time": "20:00",
       "timeET": "20:00",
       "timeLocal": "17:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group D Winner",
       "away": "Group B/E/F/I/J 3rd Place",
       "venue": "Levi's Stadium, San Francisco Bay Area, United States",
       "city": "San Francisco Bay Area",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "82",
@@ -1547,16 +1546,16 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "13:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group G Winner",
       "away": "Group A/E/H/I/J 3rd Place",
       "venue": "Lumen Field, Seattle, United States",
       "city": "Seattle",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "83",
@@ -1565,16 +1564,16 @@ window.ATG_CONFIG = {
       "time": "19:00",
       "timeET": "19:00",
       "timeLocal": "19:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group K Runner-up",
       "away": "Group L Runner-up",
       "venue": "BMO Field, Toronto, Canada",
       "city": "Toronto",
       "country": "Canada",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "84",
@@ -1583,16 +1582,16 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group H Winner",
       "away": "Group J Runner-up",
       "venue": "SoFi Stadium, Los Angeles, United States",
       "city": "Los Angeles",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "85",
@@ -1601,16 +1600,16 @@ window.ATG_CONFIG = {
       "time": "23:00",
       "timeET": "23:00",
       "timeLocal": "20:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group B Winner",
       "away": "Group E/F/G/I/J 3rd Place",
       "venue": "BC Place, Vancouver, Canada",
       "city": "Vancouver",
       "country": "Canada",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "86",
@@ -1619,16 +1618,16 @@ window.ATG_CONFIG = {
       "time": "18:00",
       "timeET": "18:00",
       "timeLocal": "18:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group J Winner",
       "away": "Group H Runner-up",
       "venue": "Hard Rock Stadium, Miami, United States",
       "city": "Miami",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "87",
@@ -1637,16 +1636,16 @@ window.ATG_CONFIG = {
       "time": "21:30",
       "timeET": "21:30",
       "timeLocal": "20:30",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group K Winner",
       "away": "Group D/E/I/J/L 3rd Place",
       "venue": "Arrowhead Stadium, Kansas City, United States",
       "city": "Kansas City",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "88",
@@ -1655,16 +1654,16 @@ window.ATG_CONFIG = {
       "time": "14:00",
       "timeET": "14:00",
       "timeLocal": "13:00",
-      "stage": "knockout",
+      "stage": "Round of 32",
+      "stageType": "knockout",
       "stageLabel": "Round of 32",
-      "group": "",
+      "group": "Round of 32",
       "home": "Group D Runner-up",
       "away": "Group G Runner-up",
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "89",
@@ -1673,16 +1672,16 @@ window.ATG_CONFIG = {
       "time": "17:00",
       "timeET": "17:00",
       "timeLocal": "17:00",
-      "stage": "knockout",
+      "stage": "Round of 16",
+      "stageType": "knockout",
       "stageLabel": "Round of 16",
-      "group": "",
+      "group": "Round of 16",
       "home": "Match 74 Winner",
       "away": "Match 77 Winner",
       "venue": "Lincoln Financial Field, Philadelphia, United States",
       "city": "Philadelphia",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "90",
@@ -1691,16 +1690,16 @@ window.ATG_CONFIG = {
       "time": "13:00",
       "timeET": "13:00",
       "timeLocal": "12:00",
-      "stage": "knockout",
+      "stage": "Round of 16",
+      "stageType": "knockout",
       "stageLabel": "Round of 16",
-      "group": "",
+      "group": "Round of 16",
       "home": "Match 73 Winner",
       "away": "Match 75 Winner",
       "venue": "NRG Stadium, Houston, United States",
       "city": "Houston",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "91",
@@ -1709,16 +1708,16 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "16:00",
-      "stage": "knockout",
+      "stage": "Round of 16",
+      "stageType": "knockout",
       "stageLabel": "Round of 16",
-      "group": "",
+      "group": "Round of 16",
       "home": "Match 76 Winner",
       "away": "Match 78 Winner",
       "venue": "MetLife Stadium, New York/New Jersey, United States",
       "city": "New York/New Jersey",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "92",
@@ -1727,16 +1726,16 @@ window.ATG_CONFIG = {
       "time": "20:00",
       "timeET": "20:00",
       "timeLocal": "18:00",
-      "stage": "knockout",
+      "stage": "Round of 16",
+      "stageType": "knockout",
       "stageLabel": "Round of 16",
-      "group": "",
+      "group": "Round of 16",
       "home": "Match 79 Winner",
       "away": "Match 80 Winner",
       "venue": "Estadio Azteca, Mexico City, Mexico",
       "city": "Mexico City",
       "country": "Mexico",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "93",
@@ -1745,16 +1744,16 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "14:00",
-      "stage": "knockout",
+      "stage": "Round of 16",
+      "stageType": "knockout",
       "stageLabel": "Round of 16",
-      "group": "",
+      "group": "Round of 16",
       "home": "Match 83 Winner",
       "away": "Match 84 Winner",
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "94",
@@ -1763,16 +1762,16 @@ window.ATG_CONFIG = {
       "time": "20:00",
       "timeET": "20:00",
       "timeLocal": "17:00",
-      "stage": "knockout",
+      "stage": "Round of 16",
+      "stageType": "knockout",
       "stageLabel": "Round of 16",
-      "group": "",
+      "group": "Round of 16",
       "home": "Match 81 Winner",
       "away": "Match 82 Winner",
       "venue": "Lumen Field, Seattle, United States",
       "city": "Seattle",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "95",
@@ -1781,16 +1780,16 @@ window.ATG_CONFIG = {
       "time": "12:00",
       "timeET": "12:00",
       "timeLocal": "12:00",
-      "stage": "knockout",
+      "stage": "Round of 16",
+      "stageType": "knockout",
       "stageLabel": "Round of 16",
-      "group": "",
+      "group": "Round of 16",
       "home": "Match 86 Winner",
       "away": "Match 88 Winner",
       "venue": "Mercedes-Benz Stadium, Atlanta, United States",
       "city": "Atlanta",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "96",
@@ -1799,16 +1798,16 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "13:00",
-      "stage": "knockout",
+      "stage": "Round of 16",
+      "stageType": "knockout",
       "stageLabel": "Round of 16",
-      "group": "",
+      "group": "Round of 16",
       "home": "Match 85 Winner",
       "away": "Match 87 Winner",
       "venue": "BC Place, Vancouver, Canada",
       "city": "Vancouver",
       "country": "Canada",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "97",
@@ -1817,16 +1816,16 @@ window.ATG_CONFIG = {
       "time": "16:00",
       "timeET": "16:00",
       "timeLocal": "16:00",
-      "stage": "knockout",
+      "stage": "Quarter-finals",
+      "stageType": "knockout",
       "stageLabel": "Quarter-finals",
-      "group": "",
+      "group": "Quarter-finals",
       "home": "Match 89 Winner",
       "away": "Match 90 Winner",
       "venue": "Gillette Stadium, Boston, United States",
       "city": "Boston",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "98",
@@ -1835,16 +1834,16 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "12:00",
-      "stage": "knockout",
+      "stage": "Quarter-finals",
+      "stageType": "knockout",
       "stageLabel": "Quarter-finals",
-      "group": "",
+      "group": "Quarter-finals",
       "home": "Match 93 Winner",
       "away": "Match 94 Winner",
       "venue": "SoFi Stadium, Los Angeles, United States",
       "city": "Los Angeles",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "99",
@@ -1853,16 +1852,16 @@ window.ATG_CONFIG = {
       "time": "17:00",
       "timeET": "17:00",
       "timeLocal": "17:00",
-      "stage": "knockout",
+      "stage": "Quarter-finals",
+      "stageType": "knockout",
       "stageLabel": "Quarter-finals",
-      "group": "",
+      "group": "Quarter-finals",
       "home": "Match 91 Winner",
       "away": "Match 92 Winner",
       "venue": "Hard Rock Stadium, Miami, United States",
       "city": "Miami",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "100",
@@ -1871,16 +1870,16 @@ window.ATG_CONFIG = {
       "time": "21:00",
       "timeET": "21:00",
       "timeLocal": "20:00",
-      "stage": "knockout",
+      "stage": "Quarter-finals",
+      "stageType": "knockout",
       "stageLabel": "Quarter-finals",
-      "group": "",
+      "group": "Quarter-finals",
       "home": "Match 95 Winner",
       "away": "Match 96 Winner",
       "venue": "Arrowhead Stadium, Kansas City, United States",
       "city": "Kansas City",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "101",
@@ -1889,16 +1888,16 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "14:00",
-      "stage": "knockout",
+      "stage": "Semi-finals",
+      "stageType": "knockout",
       "stageLabel": "Semi-finals",
-      "group": "",
+      "group": "Semi-finals",
       "home": "Match 97 Winner",
       "away": "Match 98 Winner",
       "venue": "AT&T Stadium, Dallas, United States",
       "city": "Dallas",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "102",
@@ -1907,16 +1906,16 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "15:00",
-      "stage": "knockout",
+      "stage": "Semi-finals",
+      "stageType": "knockout",
       "stageLabel": "Semi-finals",
-      "group": "",
+      "group": "Semi-finals",
       "home": "Match 99 Winner",
       "away": "Match 100 Winner",
       "venue": "Mercedes-Benz Stadium, Atlanta, United States",
       "city": "Atlanta",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "103",
@@ -1925,16 +1924,16 @@ window.ATG_CONFIG = {
       "time": "17:00",
       "timeET": "17:00",
       "timeLocal": "17:00",
-      "stage": "knockout",
+      "stage": "Third Place",
+      "stageType": "knockout",
       "stageLabel": "Third Place",
-      "group": "",
+      "group": "Third Place",
       "home": "Match 101 Loser",
       "away": "Match 102 Loser",
       "venue": "Hard Rock Stadium, Miami, United States",
       "city": "Miami",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     },
     {
       "id": "104",
@@ -1943,16 +1942,16 @@ window.ATG_CONFIG = {
       "time": "15:00",
       "timeET": "15:00",
       "timeLocal": "15:00",
-      "stage": "knockout",
+      "stage": "Final",
+      "stageType": "knockout",
       "stageLabel": "Final",
-      "group": "",
+      "group": "Final",
       "home": "Match 101 Winner",
       "away": "Match 102 Winner",
       "venue": "MetLife Stadium, New York/New Jersey, United States",
       "city": "New York/New Jersey",
       "country": "United States",
-      "status": "bracket_slot",
-      "source": "https://www.roadtrips.com/world-cup/2026-world-cup-packages/schedule/"
+      "status": "bracket_slot"
     }
   ]
 };

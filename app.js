@@ -4,7 +4,7 @@ const todayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Ameri
 const nowEtMs = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })).getTime();
 
 const DEFAULT_STATE = {
-  matches: CONFIG.matches,
+  matches: CONFIG.matches.map(normalizeMatch),
   picks: {},
   results: {},
   overrides: {},
@@ -21,6 +21,27 @@ let historyRef = null;
 let useFirebase = false;
 let unsub = null;
 let firebaseApi = null;
+
+const STAGE_OPTIONS = ["Group Stage", "Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Third Place", "Final"];
+function stageType(match){
+  const s = String(match.stage || match.stageLabel || '').toLowerCase();
+  if(match.stageType) return match.stageType;
+  return s === 'group' || s === 'group stage' ? 'group' : 'knockout';
+}
+function normalizeStage(value){
+  const v = String(value || '').trim();
+  if(!v) return 'Group Stage';
+  const key = v.toLowerCase();
+  if(key === 'group') return 'Group Stage';
+  if(key === 'knockout') return 'Round of 32';
+  return STAGE_OPTIONS.find(x => x.toLowerCase() === key) || v;
+}
+function normalizeMatch(match){
+  const stage = normalizeStage(match.stageLabel || match.stage || 'Group Stage');
+  const type = stage === 'Group Stage' ? 'group' : 'knockout';
+  const group = type === 'group' ? (match.group || '') : stage;
+  return { ...match, stage, stageType:type, stageLabel:stage, group };
+}
 
 function setSyncStatus(text, mode=''){
   const el = $('firebaseStatus');
@@ -112,7 +133,7 @@ function normalizeState(input){
   return {
     ...DEFAULT_STATE,
     ...input,
-    matches: Array.isArray(input.matches) ? input.matches : CONFIG.matches,
+    matches: Array.isArray(input.matches) ? input.matches.map(normalizeMatch) : CONFIG.matches.map(normalizeMatch),
     picks: input.picks || {},
     results: input.results || {},
     overrides: input.overrides || {}
@@ -239,7 +260,7 @@ function filteredMatches(){
   const stage = $('stageFilter').value;
   const view = $('viewFilter').value;
   return state.matches.filter(m => {
-    if(stage !== 'all' && m.stage !== stage) return false;
+    if(stage !== 'all' && (m.stageLabel || m.stage) !== stage) return false;
     if(date && m.date !== date) return false;
     if(view === 'today' && m.date !== todayIso()) return false;
     if(view === 'completed' && !isCompleted(m)) return false;
@@ -274,7 +295,7 @@ function renderDashboard(){
 
 function renderBracket(){
   const rounds = {};
-  state.matches.filter(m=>m.stage==='knockout').forEach(m => { const key = m.group || 'Knockout'; (rounds[key] ||= []).push(m); });
+  state.matches.filter(m=>stageType(m)==='knockout').forEach(m => { const key = m.stageLabel || m.stage || 'Knockout'; (rounds[key] ||= []).push(m); });
   $('bracketGrid').innerHTML = Object.keys(rounds).length ? Object.entries(rounds).map(([round,matches])=>`<div class="bracket-round"><h3>${escapeHtml(round)}</h3>${matches.map(m=>`<div class="bracket-match"><strong>${escapeHtml(m.home)}</strong><br>vs<br><strong>${escapeHtml(m.away)}</strong><br><span class="muted">${formatDate(m.date)} ${escapeHtml(m.time||'')} ET</span></div>`).join('')}</div>`).join('') : '<p class="muted">Import knockout matches to display the bracket.</p>';
 }
 
@@ -287,21 +308,21 @@ function renderPickForm(){
   $('pickFormList').innerHTML = state.matches.sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)).map(match => {
     const current = state.picks[role.regionId]?.[match.id] || '';
     const disabled = isLocked(match) ? 'disabled' : '';
-    const draw = match.stage === 'group' ? '<option value="draw">Draw</option>' : '';
+    const draw = stageType(match) === 'group' ? '<option value="draw">Draw</option>' : '';
     return `<div class="admin-item"><h5>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><p class="muted">${formatDate(match.date)} ${escapeHtml(match.time||'')} ET | ${escapeHtml(match.venue||'')}</p><select data-pick-match="${match.id}" ${disabled}><option value="">No pick</option><option value="home" ${current==='home'?'selected':''}>${escapeHtml(match.home)}</option>${draw}<option value="away" ${current==='away'?'selected':''}>${escapeHtml(match.away)}</option></select>${disabled?'<p class="muted">Locked at kickoff.</p>':''}</div>`;
   }).join('');
 }
 function renderResultForm(){
   $('resultFormList').innerHTML = state.matches.map(match => {
     const r = getResult(match);
-    return `<div class="admin-item"><h5>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><div class="field-grid"><label>Home Goals<input type="number" min="0" data-result-home="${match.id}" value="${r.homeGoals ?? ''}"></label><label>Away Goals<input type="number" min="0" data-result-away="${match.id}" value="${r.awayGoals ?? ''}"></label><label>Status<select data-result-status="${match.id}"><option value="scheduled" ${matchStatus(match)==='scheduled'?'selected':''}>Scheduled</option><option value="locked" ${matchStatus(match)==='locked'?'selected':''}>Locked</option><option value="completed" ${matchStatus(match)==='completed'?'selected':''}>Completed</option></select></label><label>Stage<select data-stage="${match.id}"><option value="group" ${match.stage==='group'?'selected':''}>Group</option><option value="knockout" ${match.stage==='knockout'?'selected':''}>Knockout</option></select></label></div></div>`;
+    return `<div class="admin-item"><h5>${escapeHtml(match.home)} vs ${escapeHtml(match.away)}</h5><div class="field-grid"><label>Home Goals<input type="number" min="0" data-result-home="${match.id}" value="${r.homeGoals ?? ''}"></label><label>Away Goals<input type="number" min="0" data-result-away="${match.id}" value="${r.awayGoals ?? ''}"></label><label>Status<select data-result-status="${match.id}"><option value="scheduled" ${matchStatus(match)==='scheduled'?'selected':''}>Scheduled</option><option value="locked" ${matchStatus(match)==='locked'?'selected':''}>Locked</option><option value="completed" ${matchStatus(match)==='completed'?'selected':''}>Completed</option></select></label><label>Stage<select data-stage="${match.id}">${STAGE_OPTIONS.map(stage => `<option value="${stage}" ${normalizeStage(match.stageLabel || match.stage)===stage?'selected':''}>${stage}</option>`).join('')}</select></label></div></div>`;
   }).join('');
 }
 function renderOverrideForm(){
   $('overrideList').innerHTML = state.matches.map(match => {
     const picks = CONFIG.regions.map(region => {
       const cur = state.picks[region.id]?.[match.id] || '';
-      const draw = match.stage === 'group' ? '<option value="draw">Draw</option>' : '';
+      const draw = stageType(match) === 'group' ? '<option value="draw">Draw</option>' : '';
       return `<label>${escapeHtml(region.name)}<select data-override-pick="${region.id}|${match.id}"><option value="">No pick</option><option value="home" ${cur==='home'?'selected':''}>${escapeHtml(match.home)}</option>${draw}<option value="away" ${cur==='away'?'selected':''}>${escapeHtml(match.away)}</option></select></label>`;
     }).join('');
     const unlocked = state.overrides?.[match.id]?.unlocked;
@@ -337,7 +358,7 @@ async function saveResults(){
     const stageSel = document.querySelector(`[data-stage="${id}"]`);
     const away = awayInput.value === '' ? null : Number(awayInput.value);
     state.results[id] = { homeGoals: home, awayGoals: away, status: statusSel.value };
-    const match = state.matches.find(m=>m.id===id); if(match) match.stage = stageSel.value;
+    const match = state.matches.find(m=>m.id===id); if(match){ match.stage = normalizeStage(stageSel.value); match.stageLabel = match.stage; match.stageType = match.stage === 'Group Stage' ? 'group' : 'knockout'; match.group = match.stageType === 'group' ? match.group : match.stage; }
   });
   await saveState(role.name, 'Saved match results and recalculated standings');
 }
@@ -387,11 +408,12 @@ function normalizeGame(g){
   const home = g.homeTeam || g.hometeam || g.team_a || g.home || g['home team'];
   const away = g.awayTeam || g.awayteam || g.team_b || g.away || g['away team'];
   const venue = [g.venue, g.city, g.country].filter(Boolean).join(', ') || '';
-  const rawStage = g.stage || '';
-  const stage = String(rawStage).toLowerCase().startsWith('group') ? 'group' : (String(rawStage).toLowerCase() ? 'knockout' : 'group');
-  const group = g.group ? (stage === 'group' && !String(g.group).toLowerCase().startsWith('group') ? `Group ${g.group}` : g.group) : '';
+  const rawStage = g.stage || g.stageLabel || 'Group Stage';
+  const stage = normalizeStage(rawStage);
+  const type = stage === 'Group Stage' ? 'group' : 'knockout';
+  const group = g.group ? (type === 'group' && !String(g.group).toLowerCase().startsWith('group') ? `Group ${g.group}` : g.group) : (type === 'knockout' ? stage : '');
   if(!id || !date || !time || !home || !away) throw new Error('Each game needs match id, game date, game time eastern, home team, and away team.');
-  return { id:String(id), matchNumber:id, date, time, timeET:time, timeLocal:g.time_local || '', stage, stageLabel:rawStage, group, home, away, venue, city:g.city || '', country:g.country || '', status:g.status || '', source:g.source || '' };
+  return { id:String(id), matchNumber:id, date, time, timeET:time, timeLocal:g.time_local || '', stage, stageType:type, stageLabel:stage, group, home, away, venue, city:g.city || '', country:g.country || '', status:g.status || '' };
 }
 async function loadDefaultSchedule(){
   state.matches = structuredClone(CONFIG.matches).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
@@ -414,7 +436,7 @@ async function importGames(){
   }catch(err){ alert(err.message); }
 }
 
-function exportCurrentGames(){ download('atg-games.csv', toCsv(state.matches.map(m=>({matchId:m.id,date:m.date,timeET:m.time,homeTeam:m.home,awayTeam:m.away,venue:m.venue,stage:m.stage,group:m.group})))); }
+function exportCurrentGames(){ download('atg-games.csv', toCsv(state.matches.map(m=>({matchId:m.id,date:m.date,timeET:m.time,homeTeam:m.home,awayTeam:m.away,venue:m.venue,stage:m.stageLabel || m.stage,group:m.group})))); }
 function exportStandingsCsv(){ download('atg-standings.csv', toCsv(calculateStandings().map((r,i)=>({Rank:i+1,Region:r.region.name,P:r.p,W:r.w,D:r.d,L:r.l,GF:r.gf,GA:r.ga,GD:r.gd,Pts:r.pts,Form:r.form.slice(-5).join('')})))); }
 function toCsv(rows){ if(!rows.length) return ''; const h=Object.keys(rows[0]); return [h.join(','),...rows.map(r=>h.map(k=>`"${String(r[k]??'').replaceAll('"','""')}"`).join(','))].join('\n'); }
 function download(name, content){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:'text/csv'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
@@ -424,8 +446,6 @@ async function importSave(){ try{ state = normalizeState(JSON.parse($('importTex
 async function clearData(){ if(confirm('Clear all shared data and reset to defaults?')){ state=structuredClone(DEFAULT_STATE); await saveState(role.name, 'Cleared all shared data'); } }
 
 function wireEvents(){
-  $('fifaLink').href = CONFIG.fifaSourceUrl;
-  if($('scheduleLink')) $('scheduleLink').href = CONFIG.scheduleSourceUrl || 'https://worldcup2026schedules.com/';
   $('themeToggle').onclick = () => { const d=document.documentElement; const dark=d.dataset.theme!=='dark'; d.dataset.theme=dark?'dark':'light'; localStorage.setItem('atg-theme', d.dataset.theme); $('themeToggle').textContent = dark ? 'Light Mode' : 'Dark Mode'; };
   document.documentElement.dataset.theme = localStorage.getItem('atg-theme') || 'light';
   $('themeToggle').textContent = document.documentElement.dataset.theme === 'dark' ? 'Light Mode' : 'Dark Mode';
