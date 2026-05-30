@@ -370,7 +370,7 @@
     wrap.innerHTML = keys.map(g => groupTableHtml(g, groups[g].rankings)).join('');
     const thirds = rankThirdPlaceTeams(keys.map(g => Object.assign({ group:g }, groups[g].rankings[2])).filter(t => t && t.team));
     const assignments = assignWildcardAdvancements(thirds);
-    summary.innerHTML = `<div class="third-place-ranking"><h4>Ranked 3rd Place Teams</h4>${wildcardTable(thirds)}</div>${wildcardAdvancementCards(assignments, thirds)}`;
+    summary.innerHTML = wildcardAdvancementCards(assignments, thirds);
   }
 
   function groupTableHtml(group, rows){
@@ -645,14 +645,20 @@
   function wildcardAdvancementCards(assignments, rankedThirds){
     const byGroup = Object.fromEntries((rankedThirds || []).map(t => [String(t.group).toUpperCase(), t]));
     const assignedGroups = new Set(Object.values(assignments || {}).filter(Boolean).map(t => String(t.group).toUpperCase()));
-    return `<div class="wildcard-card-grid">${WILDCARD_ADVANCEMENTS.map((set, index) => {
+    const advancingCards = WILDCARD_ADVANCEMENTS.map((set, index) => {
       const key = normalizeWildcardKey(set);
       const pick = assignments[key];
       const available = key.split('/').map(g => byGroup[g]).filter(Boolean);
       const status = pick ? `${flagFor(pick.team)} ${esc(pick.team)} <span>Group ${esc(pick.group)} · 3rd Place Rank ${pick.thirdRank || '-'}</span>` : 'Pending';
       const options = available.map(t => `<li class="${pick && t.group === pick.group ? 'selected' : assignedGroups.has(String(t.group).toUpperCase()) ? 'used' : ''}">${esc(t.group)}: ${flagFor(t.team)} ${esc(t.team)} <small>#${t.thirdRank || '-'} · ${t.pts} pts · GD ${t.gd}</small></li>`).join('');
       return `<div class="wildcard-advance-card"><div class="wildcard-seed">Wildcard ${index + 1}</div><h4>${esc(set)}</h4><strong>${status}</strong><ul>${options || '<li>Waiting on group results</li>'}</ul></div>`;
-    }).join('')}</div>`;
+    }).join('');
+    const notAdvancing = (rankedThirds || []).filter(t => !assignedGroups.has(String(t.group).toUpperCase()));
+    const notAdvancingList = notAdvancing.length
+      ? notAdvancing.map(t => `<li>${esc(t.group)}: ${flagFor(t.team)} ${esc(t.team)} <small>#${t.thirdRank || '-'} · ${t.pts} pts · GD ${t.gd}</small></li>`).join('')
+      : '<li>Pending final group standings</li>';
+    const eliminatedCard = `<div class="wildcard-advance-card not-advancing-card"><div class="wildcard-seed">Not Advancing</div><h4>3rd Place Teams Out</h4><strong>Remaining 3rd-place teams</strong><ul>${notAdvancingList}</ul></div>`;
+    return `<div class="wildcard-card-grid">${advancingCards}${eliminatedCard}</div>`;
   }
   function stageClass(stage){ return 'stage-' + String(stage || '').toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
   function pickSummaryHtml(m, locked){
