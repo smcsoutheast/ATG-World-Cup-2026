@@ -24,3 +24,18 @@ Use the scoring fields to enter match scores. Knockout teams update automaticall
 ## Firebase
 Upload all files to GitHub Pages.
 Then publish `firestore.rules` in Firebase Firestore Rules.
+
+
+Wildcard third-place slots
+
+Round of 32 third-place placeholders now display as Highest 3rd Place from the listed eligible groups. The app resolves each slot from qualified wildcard third-place teams after group standings are complete.
+
+Eligible group sets:
+A/B/C/D/F
+C/D/F/G/H
+C/E/F/H/I
+E/H/I/J/K
+B/E/F/I/J
+A/E/H/I/J
+E/F/G/I/J
+D/E/I/J/L

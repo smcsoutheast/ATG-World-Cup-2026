@@ -143,8 +143,8 @@
       if(m) return winners[m[1].toUpperCase()] || text;
       m = text.match(/^Group ([A-L]) Runner-up$/i);
       if(m) return runners[m[1].toUpperCase()] || text;
-      m = text.match(/^Group ([A-L\/]+) 3rd Place$/i);
-      if(m){
+      m = text.match(/^(?:Group |Highest )(?:3rd Place )?([A-L\/]+)(?: 3rd Place)?$/i);
+      if(m && text.toLowerCase().includes('3rd place')){
         const allowed = m[1].split('/').map(x => x.trim().toUpperCase());
         const pick = wildcards.find(t => allowed.includes(t.group) && !usedThirds.has(t.group));
         if(pick){ usedThirds.add(pick.group); return pick.team; }
