@@ -1,7 +1,8 @@
 (function(){
   const REGIONS = [
     { id:'SteveJosh', name:'Steve & Josh', code:'SJ2026', members:'Steve, Josh' },
-    { id:'Southeast', name:'Southeast', code:'SE2026', members:'Justin, Ashley, Drake' },
+    { id:'Southeast', name:'Southeast', code:'SE2026', members:'Justin, Ashley' },
+    { id:'Interns', name:'Interns', code:'IN2026', members:'Drake, Tucker, Vince' },
     { id:'Texas', name:'Texas', code:'TX2026', members:'Zarin, Gabriella' },
     { id:'Midwest', name:'Midwest', code:'MW2026', members:'Sean, Andrew, Sam' },
     { id:'MidAtlantic', name:'Mid-Atlantic', code:'MA2026', members:'John, Skyler' }

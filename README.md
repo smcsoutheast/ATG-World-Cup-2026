@@ -23,9 +23,18 @@ Super admin: `ATG2026ADMIN`
 Regions:
 - Steve & Josh: `SJ2026`
 - Southeast: `SE2026`
+- Interns: `IN2026`
 - Texas: `TX2026`
 - Midwest: `MW2026`
 - Mid-Atlantic: `MA2026`
+
+Current regions:
+- Steve & Josh: Steve, Josh
+- Southeast: Justin, Ashley
+- Interns: Drake, Tucker, Vince
+- Texas: Zarin, Gabriella
+- Midwest: Sean, Andrew, Sam
+- Mid-Atlantic: John, Skyler
 
 ## Sync notes
 If Firebase loads, the status bar says `Firebase sync active.`
