@@ -238,7 +238,7 @@
   }
 
   function groupTableHtml(group, rows){
-    return `<div class="group-card"><h3>Group ${esc(group)}</h3><div class="group-table-wrap"><table class="group-table"><thead><tr><th>Team</th><th>P</th><th>Pts</th><th>GD</th><th>GF</th><th class="hide-sm">H2H Pts</th><th class="hide-sm">H2H GD</th><th class="hide-sm">H2H GF</th></tr></thead><tbody>${rows.map((r,i) => `<tr class="${i < 2 ? 'qualified' : i === 2 ? 'third-place' : ''}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.pts}</td><td>${r.gd}</td><td>${r.gf}</td><td class="hide-sm">${r.h2hPts || 0}</td><td class="hide-sm">${r.h2hGd || 0}</td><td class="hide-sm">${r.h2hGf || 0}</td></tr>`).join('')}</tbody></table></div></div>`;
+    return `<div class="group-card"><h3>Group ${esc(group)}</h3><div class="group-table-wrap"><table class="group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>GD</th></tr></thead><tbody>${rows.map((r,i) => `<tr class="${i < 2 ? 'qualified' : i === 2 ? 'third-place' : ''}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td><td>${r.gd}</td></tr>`).join('')}</tbody></table></div></div>`;
   }
 
   function qualifierList(rows, showGroup){
@@ -283,12 +283,43 @@
     const buttons = activeRegion
       ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div>${locked ? '<p class="meta">Picks locked for this match.</p>' : ''}`
       : '<p class="meta">Unlock your region to submit picks.</p>';
-    return `<article class="card">
-      <div class="card-head"><div><div class="stage">${esc(m.stage)}${m.group ? ' · Group ' + esc(m.group) : ''}</div><div class="meta">Match ${esc(m.id)} · ${prettyDate(m.date)} · ${esc(m.timeET)} ET</div></div><div class="meta">${esc(m.country)}</div></div>
-      <div class="teams"><div class="team-row"><span>${flagFor(m.homeTeam)} ${esc(m.homeTeam)}</span><span class="score">${scoreText(m.homeScore)}</span></div><div class="team-row"><span>${flagFor(m.awayTeam)} ${esc(m.awayTeam)}</span><span class="score">${scoreText(m.awayScore)}</span></div><div class="venue">${esc(m.venue)} · ${esc(m.city)}</div>${res ? `<div class="stage">Result: ${esc(resultName(m,res))}</div>` : ''}${lockHtml}</div>
-      <div class="pick-panel">${buttons}</div><div class="picks">${picks}</div>
+    return `<article class="match-card wc-card">
+      <div class="wc-card-top">
+        <div class="match-pill">Match ${esc(m.id)}</div>
+        <div class="date-pill">${prettyLongDate(m.date)} · ${esc(m.timeET)} ET</div>
+      </div>
+      <div class="wc-match-body">
+        ${teamPanelHtml(m.homeTeam, 'Team A', 'home')}
+        <div class="vs-column">
+          <div class="ball-icon">⚽</div>
+          <div class="vs-text">VS</div>
+          <div class="group-text">${m.group ? `Group<br>${esc(m.group)}` : esc(m.stage)}</div>
+        </div>
+        ${teamPanelHtml(m.awayTeam, 'Team B', 'away')}
+      </div>
+      <div class="match-meta-row">
+        <span>${esc(m.stage)}${m.group ? ` · Group ${esc(m.group)}` : ''}</span>
+        <span>${esc(m.venue)} · ${esc(m.city)}</span>
+        ${res ? `<span class="stage">Result: ${esc(resultName(m,res))}</span>` : ''}
+      </div>
+      ${lockHtml}
+      <div class="pick-panel">${buttons}</div>
+      <div class="picks">${picks}</div>
     </article>`;
   }
+
+  function teamPanelHtml(team, label, side){
+    const url = flagUrl(team);
+    const bg = url ? ` style="background-image:linear-gradient(90deg, rgba(7,19,31,.08), rgba(7,19,31,.08)), url('${esc(url)}')"` : '';
+    const placeholder = url ? '' : ' no-flag';
+    return `<div class="flag-panel ${side}${placeholder}"${bg}>
+      <div class="team-label-card">
+        <span>${esc(label)}</span>
+        <strong>${esc(team)}</strong>
+      </div>
+    </div>`;
+  }
+
   function onPick(e){
     if(!activeRegion) return;
     const matchId = e.currentTarget.dataset.match;
@@ -458,17 +489,25 @@
     if(groups) renderGroups();
   }
 
-  function flagFor(team){
+  function flagUrl(team){
     const code = COUNTRY_CODES[team];
-    if(!code) return '🏳️';
-    if(code === 'GB-ENG') return '🏴';
-    if(code === 'GB-SCT') return '🏴';
-    return code.toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
+    if(!code) return '';
+    return `https://flagcdn.com/w320/${code.toLowerCase()}.png`;
+  }
+
+  function flagFor(team){
+    const url = flagUrl(team);
+    if(!url) return '<span class="flag-small flag-empty"></span>';
+    return `<img class="flag-small" src="${esc(url)}" alt="${esc(team)} flag" loading="lazy">`;
   }
 
   function prettyDate(d){
     const dt = new Date(d + 'T12:00:00');
     return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  }
+  function prettyLongDate(d){
+    const dt = new Date(d + 'T12:00:00');
+    return dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   }
   function esc(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
   function scoreText(v){ return v === null || v === undefined || v === '' ? '-' : esc(v); }

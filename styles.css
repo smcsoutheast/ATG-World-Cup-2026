@@ -51,3 +51,208 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
 }
 .tab-panel{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.tab-btn{background:#102f49;color:var(--text);border:1px solid var(--line)}.tab-btn.active{background:var(--gold);color:#111827}.hidden{display:none!important}.groups-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}.group-card{background:rgba(16,43,67,.88);border:1px solid var(--line);border-radius:16px;overflow:hidden}.group-card h3{margin:0;padding:14px 16px;border-bottom:1px solid var(--line);color:var(--gold)}.group-table-wrap{overflow:auto}.group-table{min-width:620px}.group-table th,.group-table td{padding:9px 8px}.group-table tr.qualified td:first-child{color:var(--green)}.group-table tr.third-place td:first-child{color:var(--blue)}.qualifier-box{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}.qualifier-box h3{margin:0 0 12px}.qualifier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.qualifier-grid>div{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:14px}.qualifier-grid h4{margin:0 0 10px;color:var(--gold)}.qualifier-grid ol{margin:0;padding-left:22px}.qualifier-grid li{margin:6px 0;font-weight:800}
 @media (max-width:760px){.groups-grid{grid-template-columns:1fr}.group-table{min-width:420px}.tab-panel{display:grid;grid-template-columns:1fr 1fr}}
+
+/* World Cup flag match cards */
+.match-grid{
+  grid-template-columns:1fr;
+}
+.wc-card{
+  overflow:hidden;
+  border-radius:20px;
+  background:#f7f2df;
+  border:1px solid rgba(255,255,255,.25);
+  color:#0b1624;
+  box-shadow:0 18px 40px rgba(0,0,0,.28);
+}
+.wc-card-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:16px 22px;
+  background:linear-gradient(90deg,#072947,#0b4772 72%,#123e65);
+  border-top:8px solid transparent;
+  border-image:linear-gradient(90deg,#ffd43b,#35d06f,#0fb5d8,#ef4444) 1;
+}
+.match-pill,.date-pill{
+  border-radius:999px;
+  font-weight:900;
+  letter-spacing:.02em;
+  white-space:nowrap;
+}
+.match-pill{
+  background:#ffcc31;
+  color:#111827;
+  padding:12px 22px;
+  text-transform:uppercase;
+}
+.date-pill{
+  color:#fff;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);
+  padding:10px 18px;
+  box-shadow:inset 0 0 18px rgba(255,255,255,.08);
+}
+.wc-match-body{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 128px minmax(0,1fr);
+  gap:16px;
+  padding:28px 22px 18px;
+  background:
+    linear-gradient(rgba(255,255,255,.72),rgba(255,255,255,.72)),
+    repeating-linear-gradient(0deg,rgba(20,60,90,.08) 0 1px,transparent 1px 32px),
+    repeating-linear-gradient(90deg,rgba(20,60,90,.06) 0 1px,transparent 1px 32px),
+    #f8f0d9;
+}
+.flag-panel{
+  position:relative;
+  min-height:210px;
+  border-radius:18px;
+  overflow:hidden;
+  background-size:cover;
+  background-position:center;
+  border:1px solid rgba(9,30,50,.14);
+  box-shadow:inset 0 0 0 999px rgba(0,0,0,.02);
+}
+.flag-panel::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:repeating-linear-gradient(105deg,rgba(255,255,255,.14) 0 9px,rgba(255,255,255,0) 9px 18px);
+  pointer-events:none;
+}
+.flag-panel.no-flag{
+  background:linear-gradient(135deg,#0c3458,#1f6b9b);
+}
+.team-label-card{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:min(430px,52%);
+  min-height:116px;
+  display:grid;
+  align-content:center;
+  gap:8px;
+  padding:20px 24px;
+  background:rgba(255,255,255,.9);
+  border:1px solid rgba(255,255,255,.75);
+  border-radius:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.14);
+  z-index:2;
+}
+.flag-panel.home .team-label-card{left:26px;text-align:left;}
+.flag-panel.away .team-label-card{right:26px;text-align:right;}
+.team-label-card span{
+  color:#39465a;
+  font-size:13px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.team-label-card strong{
+  color:#08111f;
+  font-size:clamp(26px,4vw,42px);
+  line-height:1;
+}
+.vs-column{
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8px;
+  min-height:210px;
+  border-radius:18px;
+  background:linear-gradient(180deg,#fff8d8,#fffdf1);
+  border:1px solid rgba(244,201,93,.35);
+  box-shadow:0 10px 28px rgba(0,0,0,.08);
+  color:#0b1624;
+}
+.ball-icon{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:2px solid rgba(12,59,96,.45);
+  font-size:21px;
+}
+.vs-text{
+  font-size:34px;
+  font-weight:950;
+  letter-spacing:-.04em;
+}
+.group-text{
+  color:#4a5568;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-weight:900;
+  text-align:center;
+  line-height:1.25;
+}
+.match-meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 22px 18px;
+  background:#f8f0d9;
+  color:#334155;
+  font-weight:800;
+}
+.wc-card .lock-countdown{
+  margin:0 22px 18px;
+  color:#0b1624;
+  background:rgba(255,255,255,.72);
+  border-color:rgba(9,30,50,.14);
+}
+.wc-card .pick-panel,
+.wc-card .picks{
+  background:#0d2133;
+  color:var(--text);
+}
+.flag-small{
+  width:24px;
+  height:16px;
+  object-fit:cover;
+  border-radius:3px;
+  vertical-align:-3px;
+  margin-right:7px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.18);
+}
+.flag-empty{
+  display:inline-block;
+  background:rgba(255,255,255,.12);
+}
+.group-table td:first-child{
+  white-space:nowrap;
+}
+@media (max-width:900px){
+  .wc-match-body{
+    grid-template-columns:1fr;
+  }
+  .vs-column{
+    min-height:92px;
+  }
+  .team-label-card{
+    width:70%;
+  }
+}
+@media (max-width:560px){
+  .wc-card-top{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .date-pill,.match-pill{
+    white-space:normal;
+  }
+  .flag-panel{
+    min-height:170px;
+  }
+  .team-label-card{
+    width:78%;
+    min-height:92px;
+    padding:16px;
+  }
+  .team-label-card strong{
+    font-size:25px;
+  }
+}

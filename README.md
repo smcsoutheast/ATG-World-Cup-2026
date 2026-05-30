@@ -46,3 +46,9 @@ Lock timing update:
 - Match kickoff times use Eastern time from the schedule file.
 - Matches inside the next 24 hours show a lock countdown on the match card.
 - The main page shows countdown to first kickoff. After first kickoff, it changes to countdown to final kickoff.
+
+Latest updates
+- Match cards now use a World Cup style flag layout.
+- Country flags load as PNG assets from FlagCDN using the country code map in app.js.
+- Group standings now display P, W, D, L, Pts, and GD.
+- Existing FIFA-style group tie-break logic remains in place for ranking.
