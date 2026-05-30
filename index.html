@@ -25,6 +25,8 @@
     <section class="panel tab-panel">
       <button id="tabAtg" class="tab-btn active" type="button">ATG Standings</button>
       <button id="tabGroups" class="tab-btn" type="button">World Cup Groups</button>
+      <button id="tabBracket" class="tab-btn" type="button">Knockout Bracket</button>
+      <button id="tabInsights" class="tab-btn" type="button">Competition Insights</button>
     </section>
 
     <section class="panel standings-panel" id="atgTabPanel">
@@ -38,7 +40,7 @@
         <table id="standingsTable">
           <thead>
             <tr>
-              <th>Region</th><th>P</th><th>W</th><th>D</th><th>L</th><th class="hide-sm">GF</th><th class="hide-sm">GA</th><th>GD</th><th>Pts</th><th class="hide-sm">Form</th>
+              <th>Region</th><th>P</th><th>W</th><th>D</th><th>L</th><th class="hide-sm">GF</th><th class="hide-sm">GA</th><th>GD</th><th>Pts</th><th>Acc</th><th class="hide-sm">Move</th><th class="hide-sm">Form</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -58,6 +60,31 @@
         <h3>Projected Knockout Qualifiers</h3>
         <div id="qualifierSummary" class="qualifier-grid"></div>
       </div>
+    </section>
+
+
+
+    <section class="panel bracket-panel hidden" id="bracketTabPanel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">World Cup 2026</p>
+          <h2>Knockout Bracket</h2>
+        </div>
+      </div>
+      <div id="bracketGrid" class="bracket-grid"></div>
+    </section>
+
+    <section class="panel insights-panel hidden" id="insightsTabPanel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Competition Center</p>
+          <h2>Insights</h2>
+        </div>
+        <button id="themeToggle" class="ghost small" type="button">Toggle Theme</button>
+      </div>
+      <div id="podium" class="podium-grid"></div>
+      <div id="regionProfiles" class="profile-grid"></div>
+      <div id="competitionInsights" class="insight-grid"></div>
     </section>
 
     <section class="panel controls">

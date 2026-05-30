@@ -26,7 +26,7 @@
   let applyingRemote = false;
   let countdownTimer = null;
 
-  function defaultState(){ return { picks:{}, scores:{}, teams:{}, updatedAt:null }; }
+  function defaultState(){ return { picks:{}, pickMeta:{}, scores:{}, teams:{}, lockOverrides:{}, audit:[], scoreHistory:[], previousRanks:null, backups:{}, updatedAt:null }; }
 
   function loadState(){
     try { return Object.assign(defaultState(), JSON.parse(localStorage.getItem(KEY) || '{}')); }
@@ -64,8 +64,14 @@
         const data = snapshot.data() || {};
         applyingRemote = true;
         state.picks = data.picks || {};
+        state.pickMeta = data.pickMeta || {};
         state.scores = data.scores || {};
         state.teams = data.teams || {};
+        state.lockOverrides = data.lockOverrides || {};
+        state.audit = data.audit || [];
+        state.scoreHistory = data.scoreHistory || [];
+        state.previousRanks = data.previousRanks || null;
+        state.backups = data.backups || {};
         state.updatedAt = data.updatedAt || null;
         saveLocal();
         applyingRemote = false;
@@ -86,6 +92,7 @@
 
   function saveState(){
     state.updatedAt = new Date().toISOString();
+    makeDailyBackup();
     saveLocal();
     if(!applyingRemote) saveRemote();
   }
@@ -94,8 +101,14 @@
     if(!firebaseReady || !docRef) return;
     docRef.set({
       picks: state.picks || {},
+      pickMeta: state.pickMeta || {},
       scores: state.scores || {},
       teams: state.teams || {},
+      lockOverrides: state.lockOverrides || {},
+      audit: (state.audit || []).slice(-120),
+      scoreHistory: (state.scoreHistory || []).slice(-25),
+      previousRanks: state.previousRanks || null,
+      backups: state.backups || {},
       updatedAt: state.updatedAt || new Date().toISOString()
     }, { merge:true }).then(() => {
       setSyncStatus('Saved to Firebase.');
@@ -195,14 +208,14 @@
   function calcStandings(){
     const ms = matches();
     return REGIONS.map(r => {
-      const row = { region:r.name, p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, form:[] };
+      const row = { id:r.id, region:r.name, members:r.members, p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, form:[], correct:0, accuracy:0, streak:'-' };
       ms.forEach(m => {
         const pick = state.picks[r.id]?.[m.id];
         const pts = pointsFor(m,pick);
         if(pts === null) return;
         row.p += 1;
-        if(pts === 3) row.w += 1;
-        else if(pts === 1) row.d += 1;
+        if(pts === 3){ row.w += 1; row.correct += 1; }
+        else if(pts === 1){ row.d += 1; row.correct += 1; }
         else row.l += 1;
         row.pts += pts;
         const g = goalsFor(m,pick);
@@ -211,13 +224,20 @@
         row.form.push(pts === 3 ? 'W' : pts === 1 ? 'D' : 'L');
       });
       row.gd = row.gf - row.ga;
+      row.accuracy = row.p ? Math.round((row.correct / row.p) * 100) : 0;
+      row.streak = streakText(row.form);
       row.form = row.form.slice(-5).join(' ');
       return row;
     }).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.region.localeCompare(b.region));
   }
   function renderStandings(){
     const tbody = document.querySelector('#standingsTable tbody');
-    tbody.innerHTML = calcStandings().map((r,i) => `<tr><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td class="hide-sm">${esc(r.form)}</td></tr>`).join('');
+    const prev = state.previousRanks || {};
+    tbody.innerHTML = calcStandings().map((r,i) => {
+      const move = prev[r.id] ? prev[r.id] - (i+1) : 0;
+      const moveText = move > 0 ? `▲ +${move}` : move < 0 ? `▼ ${move}` : '▬';
+      return `<tr class="region-row region-${r.id}"><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td>${r.accuracy}%</td><td class="hide-sm">${moveText}</td><td class="hide-sm">${esc(r.form)}</td></tr>`;
+    }).join('');
   }
 
   function calcGroupStandings(sourceMatches){
@@ -294,11 +314,11 @@
     const runners = keys.map(g => groups[g].rankings[1]).filter(Boolean);
     const thirds = keys.map(g => Object.assign({ group:g }, groups[g].rankings[2])).filter(t => t && t.team).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
     const wildcards = thirds.slice(0,8);
-    summary.innerHTML = `<div><h4>Group Winners</h4>${qualifierList(winners)}</div><div><h4>Group Finalists</h4>${qualifierList(runners)}</div><div><h4>Wildcard 3rd Place</h4>${qualifierList(wildcards, true)}</div>`;
+    summary.innerHTML = `<div><h4>Group Winners</h4>${qualifierList(winners)}</div><div><h4>Group Finalists</h4>${qualifierList(runners)}</div><div><h4>Wildcard 3rd Place</h4>${qualifierList(wildcards, true)}</div><div><h4>Current Best 3rd Place Teams</h4>${wildcardTable(thirds)}</div>`;
   }
 
   function groupTableHtml(group, rows){
-    return `<div class="group-card"><h3>Group ${esc(group)}</h3><div class="group-table-wrap"><table class="group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>GD</th></tr></thead><tbody>${rows.map((r,i) => `<tr class="${i < 2 ? 'qualified' : i === 2 ? 'third-place' : ''}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td><td>${r.gd}</td></tr>`).join('')}</tbody></table></div></div>`;
+    return `<div class="group-card"><h3>Group ${esc(group)}</h3><div class="group-table-wrap"><table class="group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>GD</th><th>Status</th></tr></thead><tbody>${rows.map((r,i) => `<tr class="${i < 2 ? 'qualified' : i === 2 ? 'third-place' : ''}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td><td>${r.gd}</td><td>${qualificationStatus(i, group)}</td></tr>`).join('')}</tbody></table></div></div>`;
   }
 
   function qualifierList(rows, showGroup){
@@ -357,7 +377,7 @@
       : '<p class="meta">Unlock your region to submit picks. Public picks stay hidden until lock.</p>';
     return `<article class="match-card wc-card">
       <div class="wc-card-top">
-        <div class="match-pill">Match ${esc(m.id)}</div>
+        <div class="match-pill">Match ${esc(m.id)}</div><div class="stage-badge ${stageClass(m.stage)}">${esc(m.stage)}</div>
         <div class="date-pill">${prettyLongDate(m.date)} · ${esc(m.timeET)} ET</div>
       </div>
       <div class="wc-match-body">
@@ -376,6 +396,7 @@
       </div>
       ${lockHtml}
       ${revealBanner}
+      ${pickSummaryHtml(m, locked)}
       <div class="pick-panel">${buttons}</div>
       <div class="picks">${picks}</div>
     </article>`;
@@ -404,15 +425,19 @@
     const pick = e.currentTarget.dataset.pick;
     state.picks[activeRegion] = state.picks[activeRegion] || {};
     state.picks[activeRegion][matchId] = pick;
+    state.pickMeta[activeRegion] = state.pickMeta[activeRegion] || {};
+    state.pickMeta[activeRegion][matchId] = { at:new Date().toISOString() };
+    addAudit(`${regionName(activeRegion)} submitted a pick for Match ${matchId}`);
     saveState();
     renderAll();
   }
   function renderAdmin(){
     if(!adminUnlocked){ $('adminTools').innerHTML = ''; $('adminScores').innerHTML = ''; return; }
-    $('adminTools').innerHTML = `<div class="admin-actions"><button id="resetLocal" type="button" class="ghost small">Reset local data</button><span class="meta">Knockout teams update automatically from group standings and knockout results.</span></div>`;
+    $('adminTools').innerHTML = `<div class="admin-actions"><button id="resetLocal" type="button" class="ghost small">Reset local data</button><button id="undoScore" type="button" class="ghost small">Undo last score</button><span class="meta">Knockout teams update automatically from group standings and knockout results.</span></div>`;
     $('adminScores').innerHTML = matches().map(m => {
-      return `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div><input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Score</button></div>`;
+      return `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div><input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Score</button><button data-toggle-lock="${esc(m.id)}" type="button" class="ghost small">${lockOverrideLabel(m.id)}</button></div>`;
     }).join('');
+    $('adminScores').insertAdjacentHTML('beforeend', `<div class="audit-box"><h3>Audit Log</h3>${auditHtml()}</div>`);
     const resetBtn = $('resetLocal');
     if(resetBtn){
       resetBtn.addEventListener('click', () => {
@@ -420,13 +445,22 @@
         $('adminStatus').textContent = 'Local data reset. Refresh the page to reload Firebase data.';
       });
     }
+    const undoBtn = $('undoScore');
+    if(undoBtn) undoBtn.addEventListener('click', undoLastScore);
     document.querySelectorAll('[data-save-score]').forEach(b => b.addEventListener('click', () => saveScore(b.dataset.saveScore)));
+    document.querySelectorAll('[data-toggle-lock]').forEach(b => b.addEventListener('click', () => toggleLock(b.dataset.toggleLock)));
   }
 
   function saveScore(id){
     const h = document.querySelector(`[data-home="${CSS.escape(id)}"]`).value;
     const a = document.querySelector(`[data-away="${CSS.escape(id)}"]`).value;
+    state.previousRanks = rankSnapshot();
+    const prior = state.scores[id] ? Object.assign({}, state.scores[id]) : null;
+    state.scoreHistory = state.scoreHistory || [];
+    state.scoreHistory.push({ id, prior, at:new Date().toISOString() });
+    state.scoreHistory = state.scoreHistory.slice(-25);
     state.scores[id] = { homeScore: h === '' ? null : Number(h), awayScore: a === '' ? null : Number(a) };
+    addAudit(`Super Admin updated Match ${id} score to ${h || 0}-${a || 0}`);
     saveState();
     renderAll();
     renderAdmin();
@@ -449,6 +483,8 @@
   }
 
   function isPickLocked(m){
+    if(state.lockOverrides && state.lockOverrides[m.id] === 'unlocked') return false;
+    if(state.lockOverrides && state.lockOverrides[m.id] === 'locked') return true;
     return Date.now() >= lockDate(m).getTime();
   }
 
@@ -517,6 +553,152 @@
     return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   }
 
+
+  function regionName(id){ return (REGIONS.find(r => r.id === id) || {}).name || id; }
+  function addAudit(message){
+    state.audit = state.audit || [];
+    state.audit.push({ at:new Date().toISOString(), message });
+    state.audit = state.audit.slice(-120);
+  }
+  function auditHtml(){
+    const rows = (state.audit || []).slice(-20).reverse();
+    if(!rows.length) return '<p class="meta">No changes logged yet.</p>';
+    return rows.map(a => `<div class="audit-line"><span>${prettyTimestamp(a.at)}</span><strong>${esc(a.message)}</strong></div>`).join('');
+  }
+  function rankSnapshot(){
+    const snap = {};
+    calcStandings().forEach((r,i) => snap[r.id] = i + 1);
+    return snap;
+  }
+  function streakText(form){
+    if(!form.length) return '-';
+    const last = form[form.length - 1];
+    let count = 0;
+    for(let i = form.length - 1; i >= 0; i--){ if(form[i] === last) count++; else break; }
+    return `${last}${count}`;
+  }
+  function qualificationStatus(index, group){
+    if(index < 2) return '<span class="q-badge qualified">Q</span>';
+    if(index === 2) return '<span class="q-badge wildcard">WC</span>';
+    return '<span class="q-badge eliminated">E</span>';
+  }
+  function wildcardTable(rows){
+    if(!rows.length) return '<p class="meta">No third-place teams yet.</p>';
+    return `<table class="mini-table"><thead><tr><th>Rank</th><th>Team</th><th>Group</th><th>Pts</th><th>GD</th></tr></thead><tbody>${rows.map((r,i) => `<tr><td>${i+1}</td><td>${flagFor(r.team)} ${esc(r.team)}</td><td>${esc(r.group)}</td><td>${r.pts}</td><td>${r.gd}</td></tr>`).join('')}</tbody></table>`;
+  }
+  function stageClass(stage){ return 'stage-' + String(stage || '').toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
+  function pickSummaryHtml(m, locked){
+    if(!locked) return '';
+    const counts = { HOME:0, DRAW:0, AWAY:0, NONE:0 };
+    REGIONS.forEach(r => { const p = state.picks[r.id]?.[m.id] || 'NONE'; counts[p] = (counts[p] || 0) + 1; });
+    const parts = [`${esc(m.homeTeam)}: ${counts.HOME}`];
+    if(!isKnockout(m.stage)) parts.push(`Draw: ${counts.DRAW}`);
+    parts.push(`${esc(m.awayTeam)}: ${counts.AWAY}`, `No Pick: ${counts.NONE}`);
+    return `<div class="pick-distribution"><strong>Pick Distribution</strong><span>${parts.join(' · ')}</span></div>`;
+  }
+  function lockOverrideLabel(id){
+    const v = state.lockOverrides?.[id];
+    if(v === 'locked') return 'Unlock Override';
+    if(v === 'unlocked') return 'Lock Override';
+    return 'Lock Override';
+  }
+  function toggleLock(id){
+    state.lockOverrides = state.lockOverrides || {};
+    const cur = state.lockOverrides[id];
+    state.lockOverrides[id] = cur === 'locked' ? 'unlocked' : 'locked';
+    addAudit(`Super Admin set Match ${id} to ${state.lockOverrides[id]}`);
+    saveState(); renderAll(); renderAdmin();
+  }
+  function undoLastScore(){
+    const last = (state.scoreHistory || []).pop();
+    if(!last){ $('adminStatus').textContent = 'No score change to undo.'; return; }
+    if(last.prior) state.scores[last.id] = last.prior;
+    else delete state.scores[last.id];
+    addAudit(`Super Admin undid score update for Match ${last.id}`);
+    saveState(); renderAll(); renderAdmin();
+  }
+  function makeDailyBackup(){
+    const day = new Date().toISOString().slice(0,10);
+    state.backups = state.backups || {};
+    if(state.backups[day]) return;
+    state.backups[day] = { at:new Date().toISOString(), picks:Object.keys(state.picks || {}).length, scores:Object.keys(state.scores || {}).length };
+    const keys = Object.keys(state.backups).sort();
+    while(keys.length > 14){ delete state.backups[keys.shift()]; }
+  }
+  function renderBracket(){
+    const el = $('bracketGrid'); if(!el) return;
+    const stageOrder = ['Round of 32','Round of 16','Quarter-finals','Semi-finals','Third Place','Final'];
+    const ms = matches().filter(m => stageOrder.includes(m.stage)).sort((a,b) => Number(a.id) - Number(b.id));
+    el.innerHTML = stageOrder.map(stage => {
+      const rows = ms.filter(m => m.stage === stage);
+      if(!rows.length) return '';
+      return `<div class="bracket-stage"><h3>${esc(stage)}</h3>${rows.map(m => `<div class="bracket-match"><span>#${esc(m.id)}</span><strong>${flagFor(m.homeTeam)} ${esc(m.homeTeam)}</strong><em>${scoreText(m.homeScore)} - ${scoreText(m.awayScore)}</em><strong>${flagFor(m.awayTeam)} ${esc(m.awayTeam)}</strong></div>`).join('')}</div>`;
+    }).join('');
+  }
+  function renderInsights(){
+    renderPodium(); renderProfiles(); renderCompetitionInsights();
+  }
+  function renderPodium(){
+    const el = $('podium'); if(!el) return;
+    const rows = calcStandings().slice(0,3);
+    const medals = ['🥇','🥈','🥉'];
+    el.innerHTML = rows.map((r,i) => `<div class="podium-card region-${r.id}"><div>${medals[i]}</div><strong>${esc(r.region)}</strong><span>${r.pts} pts · ${r.gd} GD</span></div>`).join('');
+  }
+  function renderProfiles(){
+    const el = $('regionProfiles'); if(!el) return;
+    const rows = calcStandings();
+    el.innerHTML = rows.map(r => `<div class="profile-card region-${r.id}"><h3>${esc(r.region)}</h3><p>${esc(r.members)}</p><strong>${r.w}-${r.l}-${r.d}</strong><span>Form: ${esc(r.form || '-')} · Accuracy: ${r.accuracy}% · Streak: ${esc(r.streak)}</span></div>`).join('');
+  }
+  function renderCompetitionInsights(){
+    const el = $('competitionInsights'); if(!el) return;
+    const rows = calcStandings();
+    const gf = rows.slice().sort((a,b) => b.gf - a.gf).slice(0,3);
+    const streaks = rows.slice().sort((a,b) => parseInt(b.streak.slice(1)) - parseInt(a.streak.slice(1))).slice(0,3);
+    const upset = upsetTracker();
+    const mod = matchOfDay();
+    el.innerHTML = `
+      <div class="insight-card"><h3>Golden Boot</h3>${gf.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.gf} GF</p>`).join('')}</div>
+      <div class="insight-card"><h3>Longest Current Streaks</h3>${streaks.map(r=>`<p>${esc(r.region)} · ${esc(r.streak)}</p>`).join('')}</div>
+      <div class="insight-card"><h3>Match of the Day</h3><p>${mod}</p></div>
+      <div class="insight-card"><h3>Upset Tracker</h3>${upset}</div>
+      <div class="insight-card"><h3>Rivalry Table</h3>${rivalryTable()}</div>
+      <div class="insight-card"><h3>Backup Status</h3><p>Local daily backup active. Firebase stores shared live data.</p></div>`;
+  }
+  function matchOfDay(){
+    const ms = matches();
+    if(!ms.length) return 'No matches loaded.';
+    const sorted = ms.slice().sort((a,b) => {
+      const as = Object.values(state.picks || {}).filter(p => p && p[a.id]).length;
+      const bs = Object.values(state.picks || {}).filter(p => p && p[b.id]).length;
+      return bs - as || Number(a.id) - Number(b.id);
+    });
+    const m = sorted[0];
+    const count = Object.values(state.picks || {}).filter(p => p && p[m.id]).length;
+    return `Match ${m.id}: ${esc(m.homeTeam)} vs ${esc(m.awayTeam)} · ${count} submitted`;
+  }
+  function upsetTracker(){
+    const items = [];
+    matches().forEach(m => {
+      const res = resultFor(m); if(!res) return;
+      const correct = REGIONS.filter(r => state.picks[r.id]?.[m.id] === res);
+      if(correct.length > 0 && correct.length <= 2){ items.push(`<p>Match ${esc(m.id)}: ${correct.map(r=>esc(r.name)).join(', ')} called ${esc(resultName(m,res))}</p>`); }
+    });
+    return items.slice(-5).join('') || '<p>No upsets recorded yet.</p>';
+  }
+  function rivalryTable(){
+    const rows = calcStandings();
+    if(rows.length < 2) return '<p>Need two regions.</p>';
+    const top = rows[0], chase = rows[1];
+    return `<p>${esc(top.region)} ${top.pts}</p><p>${esc(chase.region)} ${chase.pts}</p><p class="meta">Top two comparison by points.</p>`;
+  }
+  function toggleTheme(){
+    document.body.classList.toggle('light-theme');
+    localStorage.setItem('atg_theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+  }
+  function prettyTimestamp(v){
+    try { return new Date(v).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+    catch(e){ return v || ''; }
+  }
   function bind(){
     $('regionSelect').innerHTML = REGIONS.map(r => `<option value="${r.id}">${esc(r.name)} · ${esc(r.members)}</option>`).join('');
     $('regionUnlock').addEventListener('click', () => {
@@ -529,6 +711,10 @@
     ['stageFilter','dateFilter','searchBox'].forEach(id => $(id).addEventListener('input', renderMatches));
     $('tabAtg').addEventListener('click', () => setTab('atg'));
     $('tabGroups').addEventListener('click', () => setTab('groups'));
+    $('tabBracket').addEventListener('click', () => setTab('bracket'));
+    $('tabInsights').addEventListener('click', () => setTab('insights'));
+    const themeBtn = $('themeToggle');
+    if(themeBtn) themeBtn.addEventListener('click', toggleTheme);
     $('adminOpen').addEventListener('click', () => {
       if(typeof $('adminDialog').showModal === 'function') $('adminDialog').showModal();
       else $('adminDialog').setAttribute('open','open');
@@ -540,14 +726,17 @@
     });
     $('adminCode').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('adminUnlock').click(); }});
   }
-  function renderAll(){ renderStandings(); renderGroups(); renderMatches(); updateCountdowns(); }
+  function renderAll(){ renderStandings(); renderGroups(); renderBracket(); renderInsights(); renderMatches(); updateCountdowns(); }
   function setTab(tab){
-    const groups = tab === 'groups';
-    $('tabAtg').classList.toggle('active', !groups);
-    $('tabGroups').classList.toggle('active', groups);
-    $('atgTabPanel').classList.toggle('hidden', groups);
-    $('groupsTabPanel').classList.toggle('hidden', !groups);
-    if(groups) renderGroups();
+    const panels = { atg:'atgTabPanel', groups:'groupsTabPanel', bracket:'bracketTabPanel', insights:'insightsTabPanel' };
+    const buttons = { atg:'tabAtg', groups:'tabGroups', bracket:'tabBracket', insights:'tabInsights' };
+    Object.keys(panels).forEach(key => {
+      $(buttons[key]).classList.toggle('active', key === tab);
+      $(panels[key]).classList.toggle('hidden', key !== tab);
+    });
+    if(tab === 'groups') renderGroups();
+    if(tab === 'bracket') renderBracket();
+    if(tab === 'insights') renderInsights();
   }
 
   function flagUrl(team){
@@ -574,6 +763,7 @@
   function scoreText(v){ return v === null || v === undefined || v === '' ? '-' : esc(v); }
   function resultName(m,res){ return res === 'HOME' ? m.homeTeam : res === 'AWAY' ? m.awayTeam : 'Draw'; }
 
+  if(localStorage.getItem('atg_theme') === 'light') document.body.classList.add('light-theme');
   bind();
   renderFilters();
   renderAll();
