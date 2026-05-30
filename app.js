@@ -21,6 +21,7 @@
   const state = loadState();
   let activeRegion = null;
   let adminUnlocked = false;
+  let activeGroup = null;
   let db = null;
   let docRef = null;
   let firebaseReady = false;
@@ -303,25 +304,56 @@
   function awardLeaders(rows){
     const playedRows = rows.filter(r => r.p > 0);
     const source = playedRows.length ? playedRows : rows;
-    const goldenBall = source.slice().sort((a,b) => b.accuracy - a.accuracy || b.pts - a.pts || b.gd - a.gd || a.region.localeCompare(b.region));
-    const goldenBoot = source.slice().sort((a,b) => b.gf - a.gf || b.pts - a.pts || b.gd - a.gd || a.region.localeCompare(b.region));
-    const goldenGlove = source.slice().sort((a,b) => a.ga - b.ga || b.pts - a.pts || b.gd - a.gd || a.region.localeCompare(b.region));
-    return { goldenBall, goldenBoot, goldenGlove };
+    const goldenBall = source.slice().sort((a,b) => b.accuracy - a.accuracy || b.correct - a.correct || b.pts - a.pts || b.gd - a.gd || a.region.localeCompare(b.region));
+    const goldenBoot = source.slice().sort((a,b) => b.gf - a.gf || b.pts - a.pts || b.accuracy - a.accuracy || a.region.localeCompare(b.region));
+    const goldenGlove = source.slice().sort((a,b) => a.ga - b.ga || b.pts - a.pts || b.accuracy - a.accuracy || a.region.localeCompare(b.region));
+    const hotStreak = source.slice().sort((a,b) => currentWinStreak(b) - currentWinStreak(a) || b.accuracy - a.accuracy || b.pts - a.pts || a.region.localeCompare(b.region));
+    return { goldenBall, goldenBoot, goldenGlove, hotStreak };
   }
 
-  function awardCard(title, leader, detail){
-    if(!leader) return `<div class="award-card"><span class="award-icon">🏆</span><h3>${esc(title)}</h3><p>No results yet</p></div>`;
-    return `<div class="award-card region-${leader.id}"><span class="award-icon">${title === 'Golden Ball' ? '🏆' : title === 'Golden Boot' ? '⚽' : '🧤'}</span><h3>${esc(title)}</h3><strong>${esc(leader.region)}</strong><p>${detail(leader)}</p></div>`;
+  function currentWinStreak(row){
+    const parts = String(row.form || '').trim().split(/\s+/).filter(Boolean);
+    let count = 0;
+    for(let i = parts.length - 1; i >= 0; i--){
+      if(parts[i] === 'W') count++;
+      else break;
+    }
+    return count;
+  }
+
+  function awardIcon(type){
+    const title = esc(type);
+    const common = 'width="54" height="54" viewBox="0 0 64 64" role="img" aria-label="' + title + '"';
+    if(type === 'ball'){
+      return `<svg class="award-svg" ${common}><circle cx="32" cy="32" r="27" fill="#f4c95d"/><path d="M32 14l11 8-4 13H25l-4-13 11-8z" fill="none" stroke="#5a4300" stroke-width="3" stroke-linejoin="round"/><path d="M21 22l-10 5M43 22l10 5M25 35l-8 12M39 35l8 12M32 14V5M17 47l-6 5M47 47l6 5" stroke="#5a4300" stroke-width="3" stroke-linecap="round"/></svg>`;
+    }
+    if(type === 'boot'){
+      return `<svg class="award-svg" ${common}><path d="M10 41c12 3 22 1 32-6l7 9c3 4 1 9-4 9H19c-7 0-11-4-9-12z" fill="#f4c95d" stroke="#5a4300" stroke-width="3" stroke-linejoin="round"/><path d="M20 20h17c4 0 7 4 6 8l-1 7c-8 6-18 8-29 6l4-17c.4-2.2 1.6-4 3-4z" fill="#ffd86b" stroke="#5a4300" stroke-width="3"/><path d="M22 28h16M21 34h14M20 53v6M30 53v6M40 53v6" stroke="#5a4300" stroke-width="3" stroke-linecap="round"/></svg>`;
+    }
+    if(type === 'glove'){
+      return `<svg class="award-svg" ${common}><path d="M18 32V13c0-3 2-5 5-5s5 2 5 5v16M28 29V10c0-3 2-5 5-5s5 2 5 5v20M38 31V14c0-3 2-5 5-5s5 2 5 5v25M18 32l-6-8c-2-3-6-2-7 1-1 2 0 5 2 8l12 20c3 5 8 8 15 8h7c8 0 13-5 13-13v-9" fill="#f4c95d" stroke="#5a4300" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 42h18M26 50h14" stroke="#5a4300" stroke-width="3" stroke-linecap="round"/></svg>`;
+    }
+    return `<span class="award-emoji">🔥</span>`;
+  }
+
+  function awardCard(title, leader, detail, iconType, multi){
+    const extraClass = multi ? ' multi-award' : '';
+    if(!leader) return `<div class="award-card${extraClass}"><div class="award-icon">${awardIcon(iconType)}</div><h3>${esc(title)}</h3><p>No results yet</p></div>`;
+    return `<div class="award-card region-${leader.id}${extraClass}"><div class="award-icon">${awardIcon(iconType)}</div><h3>${esc(title)}</h3><strong>${esc(leader.region)}</strong><p>${detail(leader)}</p></div>`;
   }
 
   function renderAwardCards(rows){
     const el = $('awardCards'); if(!el) return;
     const leaders = awardLeaders(rows);
-    el.innerHTML = [
-      awardCard('Golden Ball', leaders.goldenBall[0], r => `${r.accuracy}% accuracy`),
-      awardCard('Golden Boot', leaders.goldenBoot[0], r => `${r.gf} goals scored`),
-      awardCard('Golden Glove', leaders.goldenGlove[0], r => `${r.ga} goals against`)
-    ].join('');
+    const awardRows = [
+      ['Golden Ball', leaders.goldenBall[0], r => `${r.accuracy}% accuracy`, 'ball'],
+      ['Golden Boot', leaders.goldenBoot[0], r => `${r.gf} goals scored`, 'boot'],
+      ['Golden Glove', leaders.goldenGlove[0], r => `${r.ga} goals against`, 'glove'],
+      ['Hot Streak', leaders.hotStreak[0], r => `${currentWinStreak(r)} active wins`, 'flame']
+    ];
+    const counts = {};
+    awardRows.forEach(item => { if(item[1]) counts[item[1].id] = (counts[item[1].id] || 0) + 1; });
+    el.innerHTML = awardRows.map(([title, leader, detail, iconType]) => awardCard(title, leader, detail, iconType, leader && counts[leader.id] > 1)).join('');
   }
 
   function calcGroupStandings(sourceMatches){
@@ -388,19 +420,43 @@
   }
 
   function renderGroups(){
+    const tabs = $('groupTabs');
     const wrap = $('groupStandings');
     const summary = $('qualifierSummary');
     if(!wrap || !summary) return;
     const groups = calcGroupStandings();
     const keys = Object.keys(groups).sort();
-    wrap.innerHTML = keys.map(g => groupTableHtml(g, groups[g].rankings)).join('');
+    if(!keys.length){
+      wrap.innerHTML = '<p class="meta">No group data loaded.</p>';
+      if(tabs) tabs.innerHTML = '';
+      summary.innerHTML = '';
+      return;
+    }
+    if(!activeGroup || !groups[activeGroup]) activeGroup = keys[0];
+
     const thirds = rankThirdPlaceTeams(keys.map(g => Object.assign({ group:g }, groups[g].rankings[2])).filter(t => t && t.team));
     const assignments = assignWildcardAdvancements(thirds);
+    const advancingThirdGroups = new Set(Object.values(assignments || {}).filter(Boolean).map(t => String(t.group).toUpperCase()));
+
+    if(tabs){
+      tabs.innerHTML = keys.map(g => `<button type="button" class="group-tab ${g === activeGroup ? 'active' : ''}" data-group-tab="${esc(g)}">Group ${esc(g)}</button>`).join('');
+      tabs.querySelectorAll('[data-group-tab]').forEach(btn => btn.addEventListener('click', () => {
+        activeGroup = btn.dataset.groupTab;
+        renderGroups();
+      }));
+    }
+    wrap.innerHTML = groupTableHtml(activeGroup, groups[activeGroup].rankings, advancingThirdGroups);
     summary.innerHTML = wildcardAdvancementCards(assignments, thirds);
   }
 
-  function groupTableHtml(group, rows){
-    return `<div class="group-card"><h3>Group ${esc(group)}</h3><div class="group-table-wrap"><table class="group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>GD</th><th>Status</th></tr></thead><tbody>${rows.map((r,i) => `<tr class="${i < 2 ? 'qualified' : i === 2 ? 'third-place' : ''}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td><td>${r.gd}</td><td>${qualificationStatus(i, group)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  function groupTableHtml(group, rows, advancingThirdGroups){
+    return `<div class="group-card"><h3>Group ${esc(group)}</h3><div class="group-table-wrap"><table class="group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>GD</th><th>Status</th></tr></thead><tbody>${rows.map((r,i) => `<tr class="${groupRowClass(i, group, advancingThirdGroups)}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td><td>${r.gd}</td><td>${qualificationStatus(i, group, advancingThirdGroups)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }
+
+  function groupRowClass(index, group, advancingThirdGroups){
+    if(index < 2) return 'qualified';
+    if(index === 2 && advancingThirdGroups && advancingThirdGroups.has(String(group).toUpperCase())) return 'third-place wildcard';
+    return 'eliminated';
   }
 
   function qualifierList(rows, showGroup){
@@ -659,9 +715,9 @@
     for(let i = form.length - 1; i >= 0; i--){ if(form[i] === last) count++; else break; }
     return `${last}${count}`;
   }
-  function qualificationStatus(index, group){
+  function qualificationStatus(index, group, advancingThirdGroups){
     if(index < 2) return '<span class="q-badge qualified">Q</span>';
-    if(index === 2) return '<span class="q-badge wildcard">WC</span>';
+    if(index === 2 && advancingThirdGroups && advancingThirdGroups.has(String(group).toUpperCase())) return '<span class="q-badge wildcard">WC</span>';
     return '<span class="q-badge eliminated">E</span>';
   }
   function wildcardTable(rows){
@@ -756,14 +812,14 @@
     const gf = awards.goldenBoot.slice(0,3);
     const acc = awards.goldenBall.slice(0,3);
     const glove = awards.goldenGlove.slice(0,3);
-    const streaks = rows.slice().sort((a,b) => parseInt(b.streak.slice(1)) - parseInt(a.streak.slice(1))).slice(0,3);
+    const streaks = rows.slice().sort((a,b) => currentWinStreak(b) - currentWinStreak(a) || b.accuracy - a.accuracy || b.pts - a.pts).slice(0,3);
     const upset = upsetTracker();
     const mod = matchOfDay();
     el.innerHTML = `
       <div class="insight-card"><h3>Golden Ball</h3>${acc.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.accuracy}% accuracy</p>`).join('')}</div>
       <div class="insight-card"><h3>Golden Boot</h3>${gf.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.gf} GF</p>`).join('')}</div>
       <div class="insight-card"><h3>Golden Glove</h3>${glove.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.ga} GA</p>`).join('')}</div>
-      <div class="insight-card"><h3>Longest Current Streaks</h3>${streaks.map(r=>`<p>${esc(r.region)} · ${esc(r.streak)}</p>`).join('')}</div>
+      <div class="insight-card"><h3>Longest Current Win Streaks</h3>${streaks.map(r=>`<p>${esc(r.region)} · W${currentWinStreak(r)}</p>`).join('')}</div>
       <div class="insight-card"><h3>Match of the Day</h3><p>${mod}</p></div>
       <div class="insight-card"><h3>Upset Tracker</h3>${upset}</div>
       <div class="insight-card"><h3>Rivalry Table</h3>${rivalryTable()}</div>

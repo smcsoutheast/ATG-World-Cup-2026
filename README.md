@@ -8,11 +8,12 @@ Static GitHub Pages app for SMC staff World Cup picks.
 - Picks lock 1 hour before kickoff.
 - Match countdowns with seconds.
 - Public standings.
-- World Cup group standings.
+- World Cup group standings with one group per tab.
 - Round of 32 teams populate from group standings after group scores are entered.
 - Later knockout rounds populate from prior knockout results.
 - Super admin scoring only.
 - Country flag match cards.
+- ATG award cards: Golden Ball, Golden Boot, Golden Glove, and Hot Streak.
 
 ## Super Admin
 Open the shield icon in the lower right.
@@ -41,11 +42,11 @@ E/F/G/I/J
 D/E/I/J/L
 
 
-Build: 20260530-1412-not-advancing-card
+Build: 20260530-checked-awards-groups-fix
 
 GitHub Pages update checklist:
 1. Upload every file from the ZIP to the repository root.
 2. Confirm index.html is at the root, not inside a folder.
 3. Wait 1 to 3 minutes for Pages to rebuild.
 4. Hard refresh the site. On iPhone or iPad, close Safari tab and reopen the GitHub Pages URL.
-5. Confirm the footer shows Build 20260530-1412-not-advancing-card.
+5. Confirm the footer shows Build 20260530-checked-awards-groups-fix.

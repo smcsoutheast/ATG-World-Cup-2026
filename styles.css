@@ -299,3 +299,96 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
 .award-card p{margin:0;color:var(--muted);font-weight:700}
 .award-icon{font-size:1.8rem;display:inline-block}
 @media(max-width:760px){.award-grid{grid-template-columns:1fr}}
+
+/* Checked build fixes, award cards and group tabs */
+.group-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 16px;
+}
+.group-tab{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  border-radius:999px;
+  padding:9px 13px;
+  font-weight:900;
+  cursor:pointer;
+}
+.group-tab.active{
+  background:var(--gold);
+  color:#111827;
+  border-color:var(--gold);
+}
+.groups-grid.single-group{
+  display:block;
+}
+.groups-grid.single-group .group-card{
+  max-width:900px;
+}
+.group-table tr.eliminated td:first-child{
+  color:var(--red);
+}
+.group-table tr.wildcard td:first-child{
+  color:var(--blue);
+}
+.award-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.award-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:8px;
+  min-height:190px;
+  border-top:6px solid var(--region-color,#f4c95d);
+}
+.award-card.multi-award::after{
+  content:'🏆';
+  position:absolute;
+  top:10px;
+  right:12px;
+  font-size:20px;
+}
+.award-icon{
+  display:grid;
+  place-items:center;
+  min-height:58px;
+}
+.award-svg{
+  display:block;
+  width:54px;
+  height:54px;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.25));
+}
+.award-emoji{
+  display:grid;
+  place-items:center;
+  width:54px;
+  height:54px;
+  border-radius:50%;
+  background:rgba(244,201,93,.16);
+  border:1px solid rgba(244,201,93,.42);
+  font-size:34px;
+}
+.award-card h3{
+  margin:0;
+  color:var(--gold);
+}
+.award-card strong{
+  margin:0;
+}
+.award-card p{
+  margin:0;
+}
+@media(max-width:980px){
+  .award-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:620px){
+  .award-grid{grid-template-columns:1fr;}
+  .group-tabs{display:grid;grid-template-columns:repeat(3,1fr);}
+  .group-tab{padding:9px 8px;font-size:13px;}
+}
