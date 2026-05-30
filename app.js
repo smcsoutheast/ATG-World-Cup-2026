@@ -310,11 +310,8 @@
     const groups = calcGroupStandings();
     const keys = Object.keys(groups).sort();
     wrap.innerHTML = keys.map(g => groupTableHtml(g, groups[g].rankings)).join('');
-    const winners = keys.map(g => groups[g].rankings[0]).filter(Boolean);
-    const runners = keys.map(g => groups[g].rankings[1]).filter(Boolean);
     const thirds = keys.map(g => Object.assign({ group:g }, groups[g].rankings[2])).filter(t => t && t.team).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
-    const wildcards = thirds.slice(0,8);
-    summary.innerHTML = `<div><h4>Group Winners</h4>${qualifierList(winners)}</div><div><h4>Group Finalists</h4>${qualifierList(runners)}</div><div><h4>Wildcard 3rd Place</h4>${qualifierList(wildcards, true)}</div><div><h4>Current Best 3rd Place Teams</h4>${wildcardTable(thirds)}</div>`;
+    summary.innerHTML = `<div class="third-place-ranking"><h4>Ranked 3rd Place Teams</h4>${wildcardTable(thirds)}</div>`;
   }
 
   function groupTableHtml(group, rows){
