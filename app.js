@@ -105,7 +105,66 @@
     });
   }
 
-  function matches(){ return (window.ATG_SCHEDULE || []).map(m => Object.assign({}, m, state.teams[m.id] || {}, state.scores[m.id] || {})); }
+  
+  function rawMatches(){ return (window.ATG_SCHEDULE || []).map(m => Object.assign({}, m, state.scores[m.id] || {})); }
+  function matches(){
+    const base = rawMatches();
+    const derived = deriveKnockoutTeams(base);
+    return base.map(m => Object.assign({}, m, derived[m.id] || {}));
+  }
+
+  function deriveKnockoutTeams(baseMatches){
+    const derived = {};
+    const byId = {};
+    baseMatches.forEach(m => byId[String(m.id)] = Object.assign({}, m));
+    const groups = calcGroupStandings(baseMatches);
+    const winners = {}, runners = {}, thirds = [];
+    Object.keys(groups).forEach(g => {
+      const rows = groups[g].rankings || [];
+      if(rows[0]) winners[g] = rows[0].team;
+      if(rows[1]) runners[g] = rows[1].team;
+      if(rows[2]) thirds.push(Object.assign({ group:g }, rows[2]));
+    });
+    const wildcards = thirds.sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team)).slice(0,8);
+    const usedThirds = new Set();
+
+    function currentMatch(id){ return Object.assign({}, byId[String(id)] || {}, derived[String(id)] || {}); }
+    function matchOutcome(id, want){
+      const m = currentMatch(id);
+      const res = resultFor(m);
+      if(!res || res === 'DRAW') return '';
+      if(want === 'Winner') return res === 'HOME' ? m.homeTeam : m.awayTeam;
+      if(want === 'Loser') return res === 'HOME' ? m.awayTeam : m.homeTeam;
+      return '';
+    }
+    function resolveSlot(slot){
+      const text = String(slot || '');
+      let m = text.match(/^Group ([A-L]) Winner$/i);
+      if(m) return winners[m[1].toUpperCase()] || text;
+      m = text.match(/^Group ([A-L]) Runner-up$/i);
+      if(m) return runners[m[1].toUpperCase()] || text;
+      m = text.match(/^Group ([A-L\/]+) 3rd Place$/i);
+      if(m){
+        const allowed = m[1].split('/').map(x => x.trim().toUpperCase());
+        const pick = wildcards.find(t => allowed.includes(t.group) && !usedThirds.has(t.group));
+        if(pick){ usedThirds.add(pick.group); return pick.team; }
+        return text;
+      }
+      m = text.match(/^Match (\d+) (Winner|Loser)$/i);
+      if(m) return matchOutcome(m[1], m[2]) || text;
+      return text;
+    }
+
+    baseMatches.filter(m => m.stage !== 'Group Stage').sort((a,b) => Number(a.id) - Number(b.id)).forEach(m => {
+      const home = resolveSlot(m.homeTeam);
+      const away = resolveSlot(m.awayTeam);
+      if(home !== m.homeTeam || away !== m.awayTeam){
+        derived[String(m.id)] = { homeTeam:home, awayTeam:away };
+      }
+    });
+    return derived;
+  }
+
   function isKnockout(stage){ return stage !== 'Group Stage'; }
   function resultFor(m){
     if(m.homeScore === null || m.homeScore === undefined || m.awayScore === null || m.awayScore === undefined || m.homeScore === '' || m.awayScore === '') return null;
@@ -160,8 +219,8 @@
     tbody.innerHTML = calcStandings().map((r,i) => `<tr><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td class="hide-sm">${esc(r.form)}</td></tr>`).join('');
   }
 
-  function calcGroupStandings(){
-    const groupMatches = matches().filter(m => m.stage === 'Group Stage' && m.group);
+  function calcGroupStandings(sourceMatches){
+    const groupMatches = (sourceMatches || rawMatches()).filter(m => m.stage === 'Group Stage' && m.group);
     const groups = {};
     groupMatches.forEach(m => {
       groups[m.group] = groups[m.group] || { teams:{}, matches:[] };
@@ -336,10 +395,9 @@
   }
   function renderAdmin(){
     if(!adminUnlocked){ $('adminTools').innerHTML = ''; $('adminScores').innerHTML = ''; return; }
-    $('adminTools').innerHTML = `<div class="admin-actions"><button id="resetLocal" type="button" class="ghost small">Reset local data</button></div>`;
+    $('adminTools').innerHTML = `<div class="admin-actions"><button id="resetLocal" type="button" class="ghost small">Reset local data</button><span class="meta">Knockout teams update automatically from group standings and knockout results.</span></div>`;
     $('adminScores').innerHTML = matches().map(m => {
-      const knockoutFields = isKnockout(m.stage) ? `<input data-home-team="${esc(m.id)}" value="${esc(m.homeTeam)}" placeholder="Home team"><input data-away-team="${esc(m.id)}" value="${esc(m.awayTeam)}" placeholder="Away team"><button data-save-team="${esc(m.id)}" type="button">Teams</button>` : '';
-      return `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div>${knockoutFields}<input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Score</button></div>`;
+      return `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div><input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Score</button></div>`;
     }).join('');
     const resetBtn = $('resetLocal');
     if(resetBtn){
@@ -349,7 +407,6 @@
       });
     }
     document.querySelectorAll('[data-save-score]').forEach(b => b.addEventListener('click', () => saveScore(b.dataset.saveScore)));
-    document.querySelectorAll('[data-save-team]').forEach(b => b.addEventListener('click', () => saveTeams(b.dataset.saveTeam)));
   }
 
   function saveScore(id){
@@ -360,16 +417,6 @@
     renderAll();
     renderAdmin();
   }
-  function saveTeams(id){
-    const hEl = document.querySelector(`[data-home-team="${CSS.escape(id)}"]`);
-    const aEl = document.querySelector(`[data-away-team="${CSS.escape(id)}"]`);
-    if(!hEl || !aEl) return;
-    state.teams[id] = { homeTeam: hEl.value.trim() || 'TBD', awayTeam: aEl.value.trim() || 'TBD' };
-    saveState();
-    renderAll();
-    renderAdmin();
-  }
-
   function kickoffDate(m){
     const time = normalizeTime(m.timeET || '00:00');
     return new Date(`${m.date}T${time}:00-04:00`);

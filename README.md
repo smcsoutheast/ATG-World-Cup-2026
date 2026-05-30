@@ -1,54 +1,26 @@
-# Around the Grounds, World Cup 2026
+# Around the Grounds, FIFA World Cup 2026 Edition
 
-Simple GitHub Pages app with Firebase multi-device sync.
+Static GitHub Pages app for SMC staff World Cup picks.
 
-## Files to upload
-Upload every file in this ZIP to the root of your GitHub Pages repository.
+## Features
+- Firebase multi-device sync with local backup.
+- Staff region passcodes.
+- Picks lock 1 hour before kickoff.
+- Match countdowns with seconds.
+- Public standings.
+- World Cup group standings.
+- Round of 32 teams populate from group standings after group scores are entered.
+- Later knockout rounds populate from prior knockout results.
+- Super admin scoring only.
+- Country flag match cards.
 
-## Firebase setup
-1. Open Firebase Console.
-2. Select project `atg-world-cup-26`.
-3. Create or open Firestore Database.
-4. Go to Firestore Rules.
-5. Paste the contents of `firestore.rules`.
-6. Publish.
+## Super Admin
+Open the shield icon in the lower right.
 
-The app stores shared picks and scores in one document:
+Passcode: ATG2026ADMIN
 
-`competitions/worldcup2026`
+Use the scoring fields to enter match scores. Knockout teams update automatically.
 
-## Passcodes
-Super admin: `ATG2026ADMIN`
-
-Regions:
-- Steve & Josh: `SJ2026`
-- Southeast: `SE2026`
-- Interns: `IN2026`
-- Texas: `TX2026`
-- Midwest: `MW2026`
-- Mid-Atlantic: `MA2026`
-
-Current regions:
-- Steve & Josh: Steve, Josh
-- Southeast: Justin, Ashley
-- Interns: Drake, Tucker, Vince
-- Texas: Zarin, Gabriella
-- Midwest: Sean, Andrew, Sam
-- Mid-Atlantic: John, Skyler
-
-## Sync notes
-If Firebase loads, the status bar says `Firebase sync active.`
-
-If rules are missing, the page still works locally but will show a Firebase error.
-
-Lock timing update:
-- Picks lock one hour before each match kickoff time.
-- Match kickoff times use Eastern time from the schedule file.
-- Matches inside the next 24 hours show a lock countdown on the match card.
-- The main page shows countdown to first kickoff. After first kickoff, it changes to countdown to final kickoff.
-
-Latest updates
-- Match cards now use a World Cup style flag layout.
-- Country flags load as PNG assets from FlagCDN using the country code map in app.js.
-- Group standings now display P, W, D, L, Pts, and GD.
-- Existing FIFA-style group tie-break logic remains in place for ranking.
+## Firebase
+Upload all files to GitHub Pages.
+Then publish `firestore.rules` in Firebase Firestore Rules.
