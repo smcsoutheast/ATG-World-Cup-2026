@@ -289,6 +289,15 @@
       return row;
     }).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.region.localeCompare(b.region));
   }
+  function formIcons(form){
+    const items = String(form || '').split(/\s+/).filter(Boolean).slice(-5);
+    if(!items.length) return '<span class="form-empty">-</span>';
+    return `<span class="form-icons">${items.map(x => {
+      const key = x === 'W' ? 'win' : x === 'D' ? 'draw' : 'loss';
+      return `<span class="form-icon ${key}">${esc(x)}</span>`;
+    }).join('')}</span>`;
+  }
+
   function renderStandings(){
     const tbody = document.querySelector('#standingsTable tbody');
     const prev = state.previousRanks || {};
@@ -296,7 +305,7 @@
     tbody.innerHTML = rows.map((r,i) => {
       const move = prev[r.id] ? prev[r.id] - (i+1) : 0;
       const moveText = move > 0 ? `▲ +${move}` : move < 0 ? `▼ ${move}` : '▬';
-      return `<tr class="region-row region-${r.id}"><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td>${r.accuracy}%</td><td class="hide-sm">${moveText}</td><td class="hide-sm">${esc(r.form)}</td></tr>`;
+      return `<tr class="region-row region-${r.id}"><td class="hide-sm move-cell">${moveText}</td><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td class="hide-sm">${formIcons(r.form)}</td><td>${r.accuracy}%</td></tr>`;
     }).join('');
     renderAwardCards(rows);
   }

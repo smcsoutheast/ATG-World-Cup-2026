@@ -392,3 +392,42 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
   .group-tabs{display:grid;grid-template-columns:repeat(3,1fr);}
   .group-tab{padding:9px 8px;font-size:13px;}
 }
+
+.form-icons{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+}
+.form-icon{
+  width:24px;
+  height:24px;
+  border-radius:999px;
+  display:inline-grid;
+  place-items:center;
+  font-weight:950;
+  font-size:12px;
+  line-height:1;
+}
+.form-icon.win{
+  background:#16a34a;
+  color:#ffffff;
+}
+.form-icon.draw{
+  background:#d1d5db;
+  color:#000000;
+}
+.form-icon.loss{
+  background:#dc2626;
+  color:#ffffff;
+}
+.form-empty{
+  color:var(--muted);
+  font-weight:950;
+}
+.move-cell{
+  font-weight:950;
+  text-align:center;
+  white-space:nowrap;
+}
