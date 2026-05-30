@@ -459,7 +459,32 @@
   }
 
   function groupTableHtml(group, rows, advancingThirdGroups){
-    return `<div class="group-card"><h3>Group ${esc(group)}</h3><div class="group-table-wrap"><table class="group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>GD</th><th>Status</th></tr></thead><tbody>${rows.map((r,i) => `<tr class="${groupRowClass(i, group, advancingThirdGroups)}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td><td>${r.gd}</td><td>${qualificationStatus(i, group, advancingThirdGroups)}</td></tr>`).join('')}</tbody></table></div></div>`;
+    const groupKey = String(group).toUpperCase();
+    const tableRows = rows.map((r,i) => `<tr class="${groupRowClass(i, groupKey, advancingThirdGroups)}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td><td>${formatGoalDiff(r.gd)}</td><td>${qualificationStatus(i, groupKey, advancingThirdGroups)}</td></tr>`).join('');
+    return `<div class="group-card simple-group-card">
+      <h3>Group ${esc(groupKey)}</h3>
+      <div class="group-table-wrap"><table class="group-table simple-group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>GD</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table></div>
+      ${groupSummaryCards(groupKey, rows, advancingThirdGroups)}
+      <details class="tie-break-details"><summary>FIFA tie-break order</summary><p>Head-to-head points, head-to-head goal difference, head-to-head goals scored, overall goal difference, then overall goals scored.</p></details>
+    </div>`;
+  }
+
+  function formatGoalDiff(value){
+    const n = Number(value || 0);
+    return n > 0 ? `+${n}` : String(n);
+  }
+
+  function groupSummaryCards(group, rows, advancingThirdGroups){
+    const winner = rows[0];
+    const runner = rows[1];
+    const third = rows[2];
+    const thirdAdvances = advancingThirdGroups && advancingThirdGroups.has(String(group).toUpperCase());
+    const cards = [
+      { label:'Group Winner', value:winner ? `${flagFor(winner.team)} ${esc(winner.team)}` : 'Pending', cls:'qualified' },
+      { label:'Runner-up', value:runner ? `${flagFor(runner.team)} ${esc(runner.team)}` : 'Pending', cls:'qualified' },
+      { label:'Third Place Status', value:third ? `${flagFor(third.team)} ${esc(third.team)} · ${thirdAdvances ? 'Wildcard' : 'Eliminated'}` : 'Pending', cls: thirdAdvances ? 'wildcard' : 'eliminated' }
+    ];
+    return `<div class="group-summary-cards">${cards.map(c => `<div class="group-summary-card ${c.cls}"><span>${c.label}</span><strong>${c.value}</strong></div>`).join('')}</div>`;
   }
 
   function groupRowClass(index, group, advancingThirdGroups){
@@ -734,9 +759,10 @@
     return `${last}${count}`;
   }
   function qualificationStatus(index, group, advancingThirdGroups){
-    if(index < 2) return '<span class="q-badge qualified">Q</span>';
-    if(index === 2 && advancingThirdGroups && advancingThirdGroups.has(String(group).toUpperCase())) return '<span class="q-badge wildcard">WC</span>';
-    return '<span class="q-badge eliminated">E</span>';
+    if(index === 0) return '<span class="q-badge qualified">Q</span> <small>Winner</small>';
+    if(index === 1) return '<span class="q-badge qualified">Q</span> <small>Runner-up</small>';
+    if(index === 2 && advancingThirdGroups && advancingThirdGroups.has(String(group).toUpperCase())) return '<span class="q-badge wildcard">WC</span> <small>Wildcard</small>';
+    return '<span class="q-badge eliminated">E</span> <small>Eliminated</small>';
   }
   function wildcardTable(rows){
     if(!rows.length) return '<p class="meta">No third-place teams yet.</p>';
