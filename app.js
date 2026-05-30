@@ -291,11 +291,37 @@
   function renderStandings(){
     const tbody = document.querySelector('#standingsTable tbody');
     const prev = state.previousRanks || {};
-    tbody.innerHTML = calcStandings().map((r,i) => {
+    const rows = calcStandings();
+    tbody.innerHTML = rows.map((r,i) => {
       const move = prev[r.id] ? prev[r.id] - (i+1) : 0;
       const moveText = move > 0 ? `▲ +${move}` : move < 0 ? `▼ ${move}` : '▬';
       return `<tr class="region-row region-${r.id}"><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td>${r.accuracy}%</td><td class="hide-sm">${moveText}</td><td class="hide-sm">${esc(r.form)}</td></tr>`;
     }).join('');
+    renderAwardCards(rows);
+  }
+
+  function awardLeaders(rows){
+    const playedRows = rows.filter(r => r.p > 0);
+    const source = playedRows.length ? playedRows : rows;
+    const goldenBall = source.slice().sort((a,b) => b.accuracy - a.accuracy || b.pts - a.pts || b.gd - a.gd || a.region.localeCompare(b.region));
+    const goldenBoot = source.slice().sort((a,b) => b.gf - a.gf || b.pts - a.pts || b.gd - a.gd || a.region.localeCompare(b.region));
+    const goldenGlove = source.slice().sort((a,b) => a.ga - b.ga || b.pts - a.pts || b.gd - a.gd || a.region.localeCompare(b.region));
+    return { goldenBall, goldenBoot, goldenGlove };
+  }
+
+  function awardCard(title, leader, detail){
+    if(!leader) return `<div class="award-card"><span class="award-icon">🏆</span><h3>${esc(title)}</h3><p>No results yet</p></div>`;
+    return `<div class="award-card region-${leader.id}"><span class="award-icon">${title === 'Golden Ball' ? '🏆' : title === 'Golden Boot' ? '⚽' : '🧤'}</span><h3>${esc(title)}</h3><strong>${esc(leader.region)}</strong><p>${detail(leader)}</p></div>`;
+  }
+
+  function renderAwardCards(rows){
+    const el = $('awardCards'); if(!el) return;
+    const leaders = awardLeaders(rows);
+    el.innerHTML = [
+      awardCard('Golden Ball', leaders.goldenBall[0], r => `${r.accuracy}% accuracy`),
+      awardCard('Golden Boot', leaders.goldenBoot[0], r => `${r.gf} goals scored`),
+      awardCard('Golden Glove', leaders.goldenGlove[0], r => `${r.ga} goals against`)
+    ].join('');
   }
 
   function calcGroupStandings(sourceMatches){
@@ -726,12 +752,17 @@
   function renderCompetitionInsights(){
     const el = $('competitionInsights'); if(!el) return;
     const rows = calcStandings();
-    const gf = rows.slice().sort((a,b) => b.gf - a.gf).slice(0,3);
+    const awards = awardLeaders(rows);
+    const gf = awards.goldenBoot.slice(0,3);
+    const acc = awards.goldenBall.slice(0,3);
+    const glove = awards.goldenGlove.slice(0,3);
     const streaks = rows.slice().sort((a,b) => parseInt(b.streak.slice(1)) - parseInt(a.streak.slice(1))).slice(0,3);
     const upset = upsetTracker();
     const mod = matchOfDay();
     el.innerHTML = `
+      <div class="insight-card"><h3>Golden Ball</h3>${acc.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.accuracy}% accuracy</p>`).join('')}</div>
       <div class="insight-card"><h3>Golden Boot</h3>${gf.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.gf} GF</p>`).join('')}</div>
+      <div class="insight-card"><h3>Golden Glove</h3>${glove.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.ga} GA</p>`).join('')}</div>
       <div class="insight-card"><h3>Longest Current Streaks</h3>${streaks.map(r=>`<p>${esc(r.region)} · ${esc(r.streak)}</p>`).join('')}</div>
       <div class="insight-card"><h3>Match of the Day</h3><p>${mod}</p></div>
       <div class="insight-card"><h3>Upset Tracker</h3>${upset}</div>
