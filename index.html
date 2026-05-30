@@ -22,7 +22,12 @@
       <p id="overallCountdownValue" class="countdown-large">--</p>
     </section>
 
-    <section class="panel standings-panel">
+    <section class="panel tab-panel">
+      <button id="tabAtg" class="tab-btn active" type="button">ATG Standings</button>
+      <button id="tabGroups" class="tab-btn" type="button">World Cup Groups</button>
+    </section>
+
+    <section class="panel standings-panel" id="atgTabPanel">
       <div class="section-title">
         <div>
           <p class="eyebrow">Leaderboard</p>
@@ -38,6 +43,20 @@
           </thead>
           <tbody></tbody>
         </table>
+      </div>
+    </section>
+
+    <section class="panel groups-panel hidden" id="groupsTabPanel">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">World Cup 2026</p>
+          <h2>Group Standings</h2>
+        </div>
+      </div>
+      <div id="groupStandings" class="groups-grid"></div>
+      <div class="qualifier-box">
+        <h3>Projected Knockout Qualifiers</h3>
+        <div id="qualifierSummary" class="qualifier-grid"></div>
       </div>
     </section>
 

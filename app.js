@@ -12,6 +12,9 @@
   const KEY = 'atg_wc26_simple_firebase_v1';
   const DOC_PATH = 'competitions/worldcup2026';
   const STAGES = ['All Stages','Group Stage','Round of 32','Round of 16','Quarter-finals','Semi-finals','Third Place','Final'];
+  const COUNTRY_CODES = {
+    'Algeria':'DZ','Argentina':'AR','Australia':'AU','Austria':'AT','Belgium':'BE','Bosnia and Herzegovina':'BA','Brazil':'BR','Cabo Verde':'CV','Canada':'CA','Colombia':'CO','Congo DR':'CD','Croatia':'HR','Curaçao':'CW','Czechia':'CZ','Côte d’Ivoire':'CI','Ecuador':'EC','Egypt':'EG','England':'GB-ENG','France':'FR','Germany':'DE','Ghana':'GH','Haiti':'HT','Iran':'IR','Iraq':'IQ','Japan':'JP','Jordan':'JO','Korea Republic':'KR','Mexico':'MX','Morocco':'MA','Netherlands':'NL','New Zealand':'NZ','Norway':'NO','Panama':'PA','Paraguay':'PY','Portugal':'PT','Qatar':'QA','Saudi Arabia':'SA','Scotland':'GB-SCT','Senegal':'SN','South Africa':'ZA','Spain':'ES','Sweden':'SE','Switzerland':'CH','Tunisia':'TN','Türkiye':'TR','United States':'US','Uruguay':'UY','Uzbekistan':'UZ'
+  };
 
   const $ = id => document.getElementById(id);
   const state = loadState();
@@ -156,6 +159,92 @@
     const tbody = document.querySelector('#standingsTable tbody');
     tbody.innerHTML = calcStandings().map((r,i) => `<tr><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td class="hide-sm">${esc(r.form)}</td></tr>`).join('');
   }
+
+  function calcGroupStandings(){
+    const groupMatches = matches().filter(m => m.stage === 'Group Stage' && m.group);
+    const groups = {};
+    groupMatches.forEach(m => {
+      groups[m.group] = groups[m.group] || { teams:{}, matches:[] };
+      groups[m.group].matches.push(m);
+      [m.homeTeam, m.awayTeam].forEach(team => {
+        groups[m.group].teams[team] = groups[m.group].teams[team] || baseTeam(team);
+      });
+      const res = resultFor(m);
+      if(!res) return;
+      const h = Number(m.homeScore), a = Number(m.awayScore);
+      const home = groups[m.group].teams[m.homeTeam];
+      const away = groups[m.group].teams[m.awayTeam];
+      home.p++; away.p++;
+      home.gf += h; home.ga += a; away.gf += a; away.ga += h;
+      if(h > a){ home.w++; away.l++; home.pts += 3; }
+      else if(a > h){ away.w++; home.l++; away.pts += 3; }
+      else { home.d++; away.d++; home.pts++; away.pts++; }
+      home.gd = home.gf - home.ga;
+      away.gd = away.gf - away.ga;
+    });
+    Object.values(groups).forEach(group => group.rankings = rankGroup(Object.values(group.teams), group.matches));
+    return groups;
+  }
+
+  function baseTeam(team){ return { team, p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, h2hPts:0, h2hGd:0, h2hGf:0 }; }
+
+  function rankGroup(teams, groupMatches){
+    const byPoints = {};
+    teams.forEach(t => { byPoints[t.pts] = byPoints[t.pts] || []; byPoints[t.pts].push(t); });
+    return Object.keys(byPoints).map(Number).sort((a,b) => b-a).flatMap(points => {
+      const cluster = byPoints[points];
+      if(cluster.length === 1) return cluster;
+      const h2h = miniTable(cluster.map(t => t.team), groupMatches);
+      return cluster.slice().sort((a,b) => {
+        const ha = h2h[a.team] || baseTeam(a.team);
+        const hb = h2h[b.team] || baseTeam(b.team);
+        return hb.pts - ha.pts || hb.gd - ha.gd || hb.gf - ha.gf || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team);
+      }).map(t => Object.assign({}, t, { h2hPts:h2h[t.team]?.pts || 0, h2hGd:h2h[t.team]?.gd || 0, h2hGf:h2h[t.team]?.gf || 0 }));
+    });
+  }
+
+  function miniTable(teamNames, groupMatches){
+    const table = {};
+    teamNames.forEach(t => table[t] = baseTeam(t));
+    groupMatches.forEach(m => {
+      if(!teamNames.includes(m.homeTeam) || !teamNames.includes(m.awayTeam)) return;
+      const res = resultFor(m);
+      if(!res) return;
+      const h = Number(m.homeScore), a = Number(m.awayScore);
+      const home = table[m.homeTeam];
+      const away = table[m.awayTeam];
+      home.gf += h; home.ga += a; away.gf += a; away.ga += h;
+      if(h > a){ home.pts += 3; }
+      else if(a > h){ away.pts += 3; }
+      else { home.pts++; away.pts++; }
+      home.gd = home.gf - home.ga;
+      away.gd = away.gf - away.ga;
+    });
+    return table;
+  }
+
+  function renderGroups(){
+    const wrap = $('groupStandings');
+    const summary = $('qualifierSummary');
+    if(!wrap || !summary) return;
+    const groups = calcGroupStandings();
+    const keys = Object.keys(groups).sort();
+    wrap.innerHTML = keys.map(g => groupTableHtml(g, groups[g].rankings)).join('');
+    const winners = keys.map(g => groups[g].rankings[0]).filter(Boolean);
+    const runners = keys.map(g => groups[g].rankings[1]).filter(Boolean);
+    const thirds = keys.map(g => Object.assign({ group:g }, groups[g].rankings[2])).filter(t => t && t.team).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
+    const wildcards = thirds.slice(0,8);
+    summary.innerHTML = `<div><h4>Group Winners</h4>${qualifierList(winners)}</div><div><h4>Group Finalists</h4>${qualifierList(runners)}</div><div><h4>Wildcard 3rd Place</h4>${qualifierList(wildcards, true)}</div>`;
+  }
+
+  function groupTableHtml(group, rows){
+    return `<div class="group-card"><h3>Group ${esc(group)}</h3><div class="group-table-wrap"><table class="group-table"><thead><tr><th>Team</th><th>P</th><th>Pts</th><th>GD</th><th>GF</th><th class="hide-sm">H2H Pts</th><th class="hide-sm">H2H GD</th><th class="hide-sm">H2H GF</th></tr></thead><tbody>${rows.map((r,i) => `<tr class="${i < 2 ? 'qualified' : i === 2 ? 'third-place' : ''}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.pts}</td><td>${r.gd}</td><td>${r.gf}</td><td class="hide-sm">${r.h2hPts || 0}</td><td class="hide-sm">${r.h2hGd || 0}</td><td class="hide-sm">${r.h2hGf || 0}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }
+
+  function qualifierList(rows, showGroup){
+    if(!rows.length) return '<p class="meta">No qualifiers yet.</p>';
+    return `<ol>${rows.map(r => `<li>${flagFor(r.team)} ${esc(r.team)}${showGroup ? ` <span class="meta">Group ${esc(r.group)}</span>` : ''}</li>`).join('')}</ol>`;
+  }
   function renderFilters(){
     $('stageFilter').innerHTML = STAGES.map(s => `<option>${esc(s)}</option>`).join('');
     const dates = ['All Dates', ...new Set(matches().map(m => m.date).sort())];
@@ -196,7 +285,7 @@
       : '<p class="meta">Unlock your region to submit picks.</p>';
     return `<article class="card">
       <div class="card-head"><div><div class="stage">${esc(m.stage)}${m.group ? ' · Group ' + esc(m.group) : ''}</div><div class="meta">Match ${esc(m.id)} · ${prettyDate(m.date)} · ${esc(m.timeET)} ET</div></div><div class="meta">${esc(m.country)}</div></div>
-      <div class="teams"><div class="team-row"><span>${esc(m.homeTeam)}</span><span class="score">${scoreText(m.homeScore)}</span></div><div class="team-row"><span>${esc(m.awayTeam)}</span><span class="score">${scoreText(m.awayScore)}</span></div><div class="venue">${esc(m.venue)} · ${esc(m.city)}</div>${res ? `<div class="stage">Result: ${esc(resultName(m,res))}</div>` : ''}${lockHtml}</div>
+      <div class="teams"><div class="team-row"><span>${flagFor(m.homeTeam)} ${esc(m.homeTeam)}</span><span class="score">${scoreText(m.homeScore)}</span></div><div class="team-row"><span>${flagFor(m.awayTeam)} ${esc(m.awayTeam)}</span><span class="score">${scoreText(m.awayScore)}</span></div><div class="venue">${esc(m.venue)} · ${esc(m.city)}</div>${res ? `<div class="stage">Result: ${esc(resultName(m,res))}</div>` : ''}${lockHtml}</div>
       <div class="pick-panel">${buttons}</div><div class="picks">${picks}</div>
     </article>`;
   }
@@ -327,15 +416,13 @@
   }
 
   function formatDuration(ms){
-    if(ms <= 0) return '0m';
+    if(ms <= 0) return '0d 0h 0m 0s';
     const totalSeconds = Math.floor(ms / 1000);
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    if(days > 0) return `${days}d ${hours}h ${minutes}m`;
-    if(hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-    return `${minutes}m ${seconds}s`;
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   }
 
   function bind(){
@@ -348,6 +435,8 @@
     });
     $('regionCode').addEventListener('keydown', e => { if(e.key === 'Enter') $('regionUnlock').click(); });
     ['stageFilter','dateFilter','searchBox'].forEach(id => $(id).addEventListener('input', renderMatches));
+    $('tabAtg').addEventListener('click', () => setTab('atg'));
+    $('tabGroups').addEventListener('click', () => setTab('groups'));
     $('adminOpen').addEventListener('click', () => {
       if(typeof $('adminDialog').showModal === 'function') $('adminDialog').showModal();
       else $('adminDialog').setAttribute('open','open');
@@ -359,7 +448,24 @@
     });
     $('adminCode').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('adminUnlock').click(); }});
   }
-  function renderAll(){ renderStandings(); renderMatches(); updateCountdowns(); }
+  function renderAll(){ renderStandings(); renderGroups(); renderMatches(); updateCountdowns(); }
+  function setTab(tab){
+    const groups = tab === 'groups';
+    $('tabAtg').classList.toggle('active', !groups);
+    $('tabGroups').classList.toggle('active', groups);
+    $('atgTabPanel').classList.toggle('hidden', groups);
+    $('groupsTabPanel').classList.toggle('hidden', !groups);
+    if(groups) renderGroups();
+  }
+
+  function flagFor(team){
+    const code = COUNTRY_CODES[team];
+    if(!code) return '🏳️';
+    if(code === 'GB-ENG') return '🏴';
+    if(code === 'GB-SCT') return '🏴';
+    return code.toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
+  }
+
   function prettyDate(d){
     const dt = new Date(d + 'T12:00:00');
     return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
