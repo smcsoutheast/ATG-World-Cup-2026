@@ -21,6 +21,7 @@
   let docRef = null;
   let firebaseReady = false;
   let applyingRemote = false;
+  let countdownTimer = null;
 
   function defaultState(){ return { picks:{}, scores:{}, teams:{}, updatedAt:null }; }
 
@@ -188,16 +189,25 @@
     }).join('');
     const current = activeRegion ? state.picks[activeRegion]?.[m.id] : null;
     const options = isKnockout(m.stage) ? ['HOME','AWAY'] : ['HOME','DRAW','AWAY'];
-    const buttons = activeRegion ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}">${esc(pickLabel(m,o))}</button>`).join('')}</div>` : '<p class="meta">Unlock your region to submit picks.</p>';
+    const locked = isPickLocked(m);
+    const lockHtml = lockNoticeHtml(m);
+    const buttons = activeRegion
+      ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div>${locked ? '<p class="meta">Picks locked for this match.</p>' : ''}`
+      : '<p class="meta">Unlock your region to submit picks.</p>';
     return `<article class="card">
       <div class="card-head"><div><div class="stage">${esc(m.stage)}${m.group ? ' · Group ' + esc(m.group) : ''}</div><div class="meta">Match ${esc(m.id)} · ${prettyDate(m.date)} · ${esc(m.timeET)} ET</div></div><div class="meta">${esc(m.country)}</div></div>
-      <div class="teams"><div class="team-row"><span>${esc(m.homeTeam)}</span><span class="score">${scoreText(m.homeScore)}</span></div><div class="team-row"><span>${esc(m.awayTeam)}</span><span class="score">${scoreText(m.awayScore)}</span></div><div class="venue">${esc(m.venue)} · ${esc(m.city)}</div>${res ? `<div class="stage">Result: ${esc(resultName(m,res))}</div>` : ''}</div>
+      <div class="teams"><div class="team-row"><span>${esc(m.homeTeam)}</span><span class="score">${scoreText(m.homeScore)}</span></div><div class="team-row"><span>${esc(m.awayTeam)}</span><span class="score">${scoreText(m.awayScore)}</span></div><div class="venue">${esc(m.venue)} · ${esc(m.city)}</div>${res ? `<div class="stage">Result: ${esc(resultName(m,res))}</div>` : ''}${lockHtml}</div>
       <div class="pick-panel">${buttons}</div><div class="picks">${picks}</div>
     </article>`;
   }
   function onPick(e){
     if(!activeRegion) return;
     const matchId = e.currentTarget.dataset.match;
+    const match = matches().find(m => String(m.id) === String(matchId));
+    if(match && isPickLocked(match)){
+      $('loginStatus').textContent = 'Picks are locked for this match.';
+      return;
+    }
     const pick = e.currentTarget.dataset.pick;
     state.picks[activeRegion] = state.picks[activeRegion] || {};
     state.picks[activeRegion][matchId] = pick;
@@ -211,6 +221,13 @@
       const knockoutFields = isKnockout(m.stage) ? `<input data-home-team="${esc(m.id)}" value="${esc(m.homeTeam)}" placeholder="Home team"><input data-away-team="${esc(m.id)}" value="${esc(m.awayTeam)}" placeholder="Away team"><button data-save-team="${esc(m.id)}" type="button">Teams</button>` : '';
       return `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div>${knockoutFields}<input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Score</button></div>`;
     }).join('');
+    const resetBtn = $('resetLocal');
+    if(resetBtn){
+      resetBtn.addEventListener('click', () => {
+        localStorage.removeItem(KEY);
+        $('adminStatus').textContent = 'Local data reset. Refresh the page to reload Firebase data.';
+      });
+    }
     document.querySelectorAll('[data-save-score]').forEach(b => b.addEventListener('click', () => saveScore(b.dataset.saveScore)));
     document.querySelectorAll('[data-save-team]').forEach(b => b.addEventListener('click', () => saveTeams(b.dataset.saveTeam)));
   }
@@ -232,6 +249,95 @@
     renderAll();
     renderAdmin();
   }
+
+  function kickoffDate(m){
+    const time = normalizeTime(m.timeET || '00:00');
+    return new Date(`${m.date}T${time}:00-04:00`);
+  }
+
+  function normalizeTime(time){
+    const raw = String(time || '00:00').trim();
+    const parts = raw.split(':');
+    const h = String(parts[0] || '0').padStart(2,'0');
+    const min = String(parts[1] || '0').padStart(2,'0');
+    return `${h}:${min}`;
+  }
+
+  function lockDate(m){
+    return new Date(kickoffDate(m).getTime() - 60 * 60 * 1000);
+  }
+
+  function isPickLocked(m){
+    return Date.now() >= lockDate(m).getTime();
+  }
+
+  function lockNoticeHtml(m){
+    const now = Date.now();
+    const kick = kickoffDate(m).getTime();
+    const lock = lockDate(m).getTime();
+    if(now >= lock){
+      return `<div class="lock-countdown locked" data-lock-countdown="${esc(m.id)}">Picks locked</div>`;
+    }
+    if(kick - now <= 24 * 60 * 60 * 1000){
+      return `<div class="lock-countdown" data-lock-countdown="${esc(m.id)}">Locks in ${esc(formatDuration(lock - now))}</div>`;
+    }
+    return '';
+  }
+
+  function updateCountdowns(){
+    updateOverallCountdown();
+    document.querySelectorAll('[data-lock-countdown]').forEach(el => {
+      const id = el.getAttribute('data-lock-countdown');
+      const m = matches().find(x => String(x.id) === String(id));
+      if(!m) return;
+      const now = Date.now();
+      const kick = kickoffDate(m).getTime();
+      const lock = lockDate(m).getTime();
+      if(now >= lock){
+        el.textContent = 'Picks locked';
+        el.classList.add('locked');
+      } else if(kick - now <= 24 * 60 * 60 * 1000){
+        el.textContent = `Locks in ${formatDuration(lock - now)}`;
+        el.classList.remove('locked');
+      }
+    });
+  }
+
+  function updateOverallCountdown(){
+    const title = $('overallCountdownTitle');
+    const value = $('overallCountdownValue');
+    if(!title || !value) return;
+    const ms = matches().slice().sort((a,b) => kickoffDate(a) - kickoffDate(b));
+    if(!ms.length){ title.textContent = 'No matches loaded'; value.textContent = '--'; return; }
+    const now = Date.now();
+    const first = ms[0];
+    const final = ms.find(m => m.stage === 'Final') || ms[ms.length - 1];
+    const firstKick = kickoffDate(first).getTime();
+    const finalKick = kickoffDate(final).getTime();
+    if(now < firstKick){
+      title.textContent = 'Countdown to first kickoff';
+      value.textContent = formatDuration(firstKick - now);
+    } else if(now < finalKick){
+      title.textContent = 'Countdown to final kickoff';
+      value.textContent = formatDuration(finalKick - now);
+    } else {
+      title.textContent = 'Final kickoff has started';
+      value.textContent = 'Tournament clock complete';
+    }
+  }
+
+  function formatDuration(ms){
+    if(ms <= 0) return '0m';
+    const totalSeconds = Math.floor(ms / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if(days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if(hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    return `${minutes}m ${seconds}s`;
+  }
+
   function bind(){
     $('regionSelect').innerHTML = REGIONS.map(r => `<option value="${r.id}">${esc(r.name)} · ${esc(r.members)}</option>`).join('');
     $('regionUnlock').addEventListener('click', () => {
@@ -253,7 +359,7 @@
     });
     $('adminCode').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('adminUnlock').click(); }});
   }
-  function renderAll(){ renderStandings(); renderMatches(); }
+  function renderAll(){ renderStandings(); renderMatches(); updateCountdowns(); }
   function prettyDate(d){
     const dt = new Date(d + 'T12:00:00');
     return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
@@ -265,5 +371,8 @@
   bind();
   renderFilters();
   renderAll();
+  if(countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(updateCountdowns, 1000);
+  setInterval(renderMatches, 60000);
   initFirebase();
 })();

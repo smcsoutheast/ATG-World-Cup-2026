@@ -22,3 +22,30 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
 .admin-shield{position:fixed;right:18px;bottom:18px;width:54px;height:54px;border-radius:50%;z-index:50;display:grid;place-items:center;font-size:24px;background:var(--gold);color:#111827;box-shadow:0 12px 30px rgba(0,0,0,.35)}
 .admin-tools{margin-bottom:14px}.admin-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.entry-panel .pass-row select{min-width:260px}.admin-row{grid-template-columns:60px minmax(190px,1fr) repeat(auto-fit,minmax(78px,120px))}.admin-row [data-home-team],.admin-row [data-away-team]{min-width:150px}
 @media (max-width:760px){.admin-shield{right:14px;bottom:14px}.admin-row{grid-template-columns:1fr 1fr}.admin-row>div:first-child,.admin-row .game-title{grid-column:1/-1}.entry-panel .pass-row select,.pass-row input{width:100%;min-width:0}}
+
+.countdown-panel {
+  display: grid;
+  gap: 6px;
+}
+.countdown-large {
+  font-size: clamp(1.6rem, 4vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+.lock-countdown {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  font-weight: 800;
+}
+.lock-countdown.locked {
+  background: rgba(190, 18, 60, 0.16);
+  border-color: rgba(251, 113, 133, 0.35);
+}
+.pick-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}

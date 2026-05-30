@@ -40,3 +40,9 @@ Current regions:
 If Firebase loads, the status bar says `Firebase sync active.`
 
 If rules are missing, the page still works locally but will show a Firebase error.
+
+Lock timing update:
+- Picks lock one hour before each match kickoff time.
+- Match kickoff times use Eastern time from the schedule file.
+- Matches inside the next 24 hours show a lock countdown on the match card.
+- The main page shows countdown to first kickoff. After first kickoff, it changes to countdown to final kickoff.
