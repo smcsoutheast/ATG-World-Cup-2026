@@ -12,6 +12,7 @@
   const KEY = 'atg_wc26_simple_firebase_v1';
   const DOC_PATH = 'competitions/worldcup2026';
   const STAGES = ['All Stages','Group Stage','Round of 32','Round of 16','Quarter-finals','Semi-finals','Third Place','Final'];
+  const WILDCARD_ADVANCEMENTS = ['A/B/C/D/F','C/D/F/G/H','C/E/F/H/I','E/H/I/J/K','B/E/F/I/J','A/E/H/I/J','E/F/G/I/J','D/E/I/J/L'];
   const COUNTRY_CODES = {
     'Algeria':'DZ','Argentina':'AR','Australia':'AU','Austria':'AT','Belgium':'BE','Bosnia and Herzegovina':'BA','Brazil':'BR','Cabo Verde':'CV','Canada':'CA','Colombia':'CO','Congo DR':'CD','Croatia':'HR','Curaçao':'CW','Czechia':'CZ','Côte d’Ivoire':'CI','Ecuador':'EC','Egypt':'EG','England':'GB-ENG','France':'FR','Germany':'DE','Ghana':'GH','Haiti':'HT','Iran':'IR','Iraq':'IQ','Japan':'JP','Jordan':'JO','Korea Republic':'KR','Mexico':'MX','Morocco':'MA','Netherlands':'NL','New Zealand':'NZ','Norway':'NO','Panama':'PA','Paraguay':'PY','Portugal':'PT','Qatar':'QA','Saudi Arabia':'SA','Scotland':'GB-SCT','Senegal':'SN','South Africa':'ZA','Spain':'ES','Sweden':'SE','Switzerland':'CH','Tunisia':'TN','Türkiye':'TR','United States':'US','Uruguay':'UY','Uzbekistan':'UZ'
   };
@@ -126,6 +127,64 @@
     return base.map(m => Object.assign({}, m, derived[m.id] || {}));
   }
 
+
+  function rankThirdPlaceTeams(thirds){
+    return (thirds || [])
+      .filter(t => t && t.team && t.group)
+      .sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team))
+      .map((t,i) => Object.assign({}, t, { thirdRank:i + 1 }));
+  }
+
+  function normalizeWildcardKey(value){
+    return String(value || '').replace(/\s+/g,'').toUpperCase();
+  }
+
+  function assignWildcardAdvancements(rankedThirds){
+    const keys = WILDCARD_ADVANCEMENTS.map(normalizeWildcardKey);
+    const options = keys.map(key => {
+      const allowed = key.split('/');
+      return rankedThirds.filter(t => allowed.includes(String(t.group).toUpperCase()));
+    });
+    const order = keys.map((key,index) => ({ key, index, count: options[index].length })).sort((a,b) => a.count - b.count);
+    let best = null;
+    let bestScore = Infinity;
+
+    function search(pos, usedGroups, current){
+      if(pos === order.length){
+        const assignment = {};
+        let score = 0;
+        current.forEach(item => {
+          assignment[keys[item.index]] = item.team;
+          score += item.team.thirdRank || 99;
+        });
+        if(score < bestScore){ bestScore = score; best = assignment; }
+        return true;
+      }
+      const item = order[pos];
+      const candidates = options[item.index].filter(t => !usedGroups.has(String(t.group).toUpperCase()));
+      if(!candidates.length) return false;
+      for(const team of candidates){
+        const group = String(team.group).toUpperCase();
+        usedGroups.add(group);
+        current.push({ index:item.index, team });
+        search(pos + 1, usedGroups, current);
+        current.pop();
+        usedGroups.delete(group);
+      }
+      return !!best;
+    }
+    search(0, new Set(), []);
+    if(best) return best;
+
+    const fallback = {};
+    const used = new Set();
+    keys.forEach((key,index) => {
+      const pick = options[index].find(t => !used.has(String(t.group).toUpperCase())) || options[index][0];
+      if(pick){ used.add(String(pick.group).toUpperCase()); fallback[key] = pick; }
+    });
+    return fallback;
+  }
+
   function deriveKnockoutTeams(baseMatches){
     const derived = {};
     const byId = {};
@@ -138,8 +197,8 @@
       if(rows[1]) runners[g] = rows[1].team;
       if(rows[2]) thirds.push(Object.assign({ group:g }, rows[2]));
     });
-    const wildcards = thirds.sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team)).slice(0,8);
-    const usedThirds = new Set();
+    const rankedThirds = rankThirdPlaceTeams(thirds);
+    const wildcardAssignments = assignWildcardAdvancements(rankedThirds);
 
     function currentMatch(id){ return Object.assign({}, byId[String(id)] || {}, derived[String(id)] || {}); }
     function matchOutcome(id, want){
@@ -158,10 +217,9 @@
       if(m) return runners[m[1].toUpperCase()] || text;
       m = text.match(/^(?:Group |Highest )(?:3rd Place )?([A-L\/]+)(?: 3rd Place)?$/i);
       if(m && text.toLowerCase().includes('3rd place')){
-        const allowed = m[1].split('/').map(x => x.trim().toUpperCase());
-        const pick = wildcards.find(t => allowed.includes(t.group) && !usedThirds.has(t.group));
-        if(pick){ usedThirds.add(pick.group); return pick.team; }
-        return text;
+        const key = normalizeWildcardKey(m[1]);
+        const pick = wildcardAssignments[key];
+        return pick?.team || text;
       }
       m = text.match(/^Match (\d+) (Winner|Loser)$/i);
       if(m) return matchOutcome(m[1], m[2]) || text;
@@ -310,8 +368,9 @@
     const groups = calcGroupStandings();
     const keys = Object.keys(groups).sort();
     wrap.innerHTML = keys.map(g => groupTableHtml(g, groups[g].rankings)).join('');
-    const thirds = keys.map(g => Object.assign({ group:g }, groups[g].rankings[2])).filter(t => t && t.team).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team));
-    summary.innerHTML = `<div class="third-place-ranking"><h4>Ranked 3rd Place Teams</h4>${wildcardTable(thirds)}</div>`;
+    const thirds = rankThirdPlaceTeams(keys.map(g => Object.assign({ group:g }, groups[g].rankings[2])).filter(t => t && t.team));
+    const assignments = assignWildcardAdvancements(thirds);
+    summary.innerHTML = `<div class="third-place-ranking"><h4>Ranked 3rd Place Teams</h4>${wildcardTable(thirds)}</div>${wildcardAdvancementCards(assignments, thirds)}`;
   }
 
   function groupTableHtml(group, rows){
@@ -582,6 +641,18 @@
   function wildcardTable(rows){
     if(!rows.length) return '<p class="meta">No third-place teams yet.</p>';
     return `<table class="mini-table"><thead><tr><th>Rank</th><th>Team</th><th>Group</th><th>Pts</th><th>GD</th></tr></thead><tbody>${rows.map((r,i) => `<tr><td>${i+1}</td><td>${flagFor(r.team)} ${esc(r.team)}</td><td>${esc(r.group)}</td><td>${r.pts}</td><td>${r.gd}</td></tr>`).join('')}</tbody></table>`;
+  }
+  function wildcardAdvancementCards(assignments, rankedThirds){
+    const byGroup = Object.fromEntries((rankedThirds || []).map(t => [String(t.group).toUpperCase(), t]));
+    const assignedGroups = new Set(Object.values(assignments || {}).filter(Boolean).map(t => String(t.group).toUpperCase()));
+    return `<div class="wildcard-card-grid">${WILDCARD_ADVANCEMENTS.map((set, index) => {
+      const key = normalizeWildcardKey(set);
+      const pick = assignments[key];
+      const available = key.split('/').map(g => byGroup[g]).filter(Boolean);
+      const status = pick ? `${flagFor(pick.team)} ${esc(pick.team)} <span>Group ${esc(pick.group)} · 3rd Place Rank ${pick.thirdRank || '-'}</span>` : 'Pending';
+      const options = available.map(t => `<li class="${pick && t.group === pick.group ? 'selected' : assignedGroups.has(String(t.group).toUpperCase()) ? 'used' : ''}">${esc(t.group)}: ${flagFor(t.team)} ${esc(t.team)} <small>#${t.thirdRank || '-'} · ${t.pts} pts · GD ${t.gd}</small></li>`).join('');
+      return `<div class="wildcard-advance-card"><div class="wildcard-seed">Wildcard ${index + 1}</div><h4>${esc(set)}</h4><strong>${status}</strong><ul>${options || '<li>Waiting on group results</li>'}</ul></div>`;
+    }).join('')}</div>`;
   }
   function stageClass(stage){ return 'stage-' + String(stage || '').toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
   function pickSummaryHtml(m, locked){
