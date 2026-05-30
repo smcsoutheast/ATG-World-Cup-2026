@@ -256,3 +256,20 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
     font-size:25px;
   }
 }
+.reveal-banner{
+  margin:0 22px 18px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(13,33,51,.9);
+  color:#f8fafc;
+  font-weight:800;
+  font-size:14px;
+  border:1px solid rgba(255,255,255,.16);
+}
+.reveal-banner.locked{
+  background:rgba(22,101,52,.92);
+}
+.hidden-pick span:last-child{
+  color:var(--gold);
+  font-weight:900;
+}

@@ -181,7 +181,8 @@
   }
   function pointsFor(m,pick){
     const res = resultFor(m);
-    if(!res || !pick) return null;
+    if(!res) return null;
+    if(!pick) return isPickLocked(m) ? 0 : null;
     if(pick === res) return pick === 'DRAW' ? 1 : 3;
     return 0;
   }
@@ -329,19 +330,31 @@
   }
   function cardHtml(m){
     const res = resultFor(m);
+    const locked = isPickLocked(m);
+    const current = activeRegion ? state.picks[activeRegion]?.[m.id] : null;
+    const submitted = REGIONS.filter(r => !!state.picks[r.id]?.[m.id]).length;
+    const remaining = REGIONS.length - submitted;
+    const revealPicks = locked;
     const picks = REGIONS.map(r => {
       const pick = state.picks[r.id]?.[m.id];
+      const isOwn = activeRegion === r.id;
+      if(!revealPicks && !isOwn){
+        const status = pick ? 'Submitted' : 'Pending';
+        return `<div class="pick-line hidden-pick"><span>${esc(r.name)}</span><span>${status}</span></div>`;
+      }
       const pts = pointsFor(m,pick);
       const cls = pts === 3 || pts === 1 ? 'correct' : pts === 0 ? 'wrong' : pick === 'DRAW' ? 'draw' : '';
-      return `<div class="pick-line"><span>${esc(r.name)}</span><span class="${cls}">${esc(pickLabel(m,pick))}</span></div>`;
+      const label = pick ? pickLabel(m,pick) : (locked ? 'No Pick' : 'No pick');
+      return `<div class="pick-line"><span>${esc(r.name)}${isOwn && !locked ? ' · Your pick' : ''}</span><span class="${cls}">${esc(label)}</span></div>`;
     }).join('');
-    const current = activeRegion ? state.picks[activeRegion]?.[m.id] : null;
     const options = isKnockout(m.stage) ? ['HOME','AWAY'] : ['HOME','DRAW','AWAY'];
-    const locked = isPickLocked(m);
     const lockHtml = lockNoticeHtml(m);
+    const revealBanner = !locked
+      ? `<div class="reveal-banner">Regional selections will be revealed when match entry locks. ${submitted} submitted. ${remaining} remaining.</div>`
+      : `<div class="reveal-banner locked">Regional selections are now visible.</div>`;
     const buttons = activeRegion
-      ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div>${locked ? '<p class="meta">Picks locked for this match.</p>' : ''}`
-      : '<p class="meta">Unlock your region to submit picks.</p>';
+      ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div>${locked ? '<p class="meta">Picks locked for this match.</p>' : '<p class="meta">Only your region pick is visible before lock.</p>'}`
+      : '<p class="meta">Unlock your region to submit picks. Public picks stay hidden until lock.</p>';
     return `<article class="match-card wc-card">
       <div class="wc-card-top">
         <div class="match-pill">Match ${esc(m.id)}</div>
@@ -362,6 +375,7 @@
         ${res ? `<span class="stage">Result: ${esc(resultName(m,res))}</span>` : ''}
       </div>
       ${lockHtml}
+      ${revealBanner}
       <div class="pick-panel">${buttons}</div>
       <div class="picks">${picks}</div>
     </article>`;
