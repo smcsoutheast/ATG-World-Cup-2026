@@ -492,73 +492,82 @@
     const matchesEl = $('matches');
     const ms = filteredMatches();
     if(!ms.length){ matchesEl.innerHTML = '<div class="panel">No matches found.</div>'; return; }
-    matchesEl.innerHTML = ms.map(cardHtml).join('');
+    const grouped = ms.reduce((acc, m) => {
+      const key = m.date || 'TBD';
+      acc[key] = acc[key] || [];
+      acc[key].push(m);
+      return acc;
+    }, {});
+    matchesEl.innerHTML = Object.keys(grouped).sort().map(date => {
+      return `<section class="match-day-group"><h3>${date === 'TBD' ? 'Date TBD' : prettyLongDate(date)}</h3><div class="match-day-list">${grouped[date].map(cardHtml).join('')}</div></section>`;
+    }).join('');
     document.querySelectorAll('[data-pick]').forEach(btn => btn.addEventListener('click', onPick));
   }
+
   function cardHtml(m){
     const res = resultFor(m);
     const locked = isPickLocked(m);
     const current = activeRegion ? state.picks[activeRegion]?.[m.id] : null;
     const submitted = REGIONS.filter(r => !!state.picks[r.id]?.[m.id]).length;
     const remaining = REGIONS.length - submitted;
-    const revealPicks = locked;
-    const picks = REGIONS.map(r => {
-      const pick = state.picks[r.id]?.[m.id];
-      const isOwn = activeRegion === r.id;
-      if(!revealPicks && !isOwn){
-        const status = pick ? 'Submitted' : 'Pending';
-        return `<div class="pick-line hidden-pick"><span>${esc(r.name)}</span><span>${status}</span></div>`;
-      }
-      const pts = pointsFor(m,pick);
-      const cls = pts === 3 || pts === 1 ? 'correct' : pts === 0 ? 'wrong' : pick === 'DRAW' ? 'draw' : '';
-      const label = pick ? pickLabel(m,pick) : (locked ? 'No Pick' : 'No pick');
-      return `<div class="pick-line"><span>${esc(r.name)}${isOwn && !locked ? ' · Your pick' : ''}</span><span class="${cls}">${esc(label)}</span></div>`;
-    }).join('');
+    const status = matchStatus(m, locked, res);
     const options = isKnockout(m.stage) ? ['HOME','AWAY'] : ['HOME','DRAW','AWAY'];
-    const lockHtml = lockNoticeHtml(m);
-    const revealBanner = !locked
-      ? `<div class="reveal-banner">Regional selections will be revealed when match entry locks. ${submitted} submitted. ${remaining} remaining.</div>`
-      : `<div class="reveal-banner locked">Regional selections are now visible.</div>`;
     const buttons = activeRegion
-      ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div>${locked ? '<p class="meta">Picks locked for this match.</p>' : '<p class="meta">Only your region pick is visible before lock.</p>'}`
+      ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div><p class="meta">${locked ? 'Picks locked for this match.' : 'Only your region pick is visible before lock.'}</p>`
       : '<p class="meta">Unlock your region to submit picks. Public picks stay hidden until lock.</p>';
-    return `<article class="match-card wc-card">
-      <div class="wc-card-top">
-        <div class="match-pill">Match ${esc(m.id)}</div><div class="stage-badge ${stageClass(m.stage)}">${esc(m.stage)}</div>
-        <div class="date-pill">${prettyLongDate(m.date)} · ${esc(m.timeET)} ET</div>
+    const scoreHtml = res ? `<div class="simple-score">${scoreText(m)}<span>${esc(resultName(m,res))}</span></div>` : '';
+    const pickArea = locked ? `<div class="pick-chip-grid">${pickChipsHtml(m)}</div>${pickSummaryHtml(m, true)}` : `<div class="simple-submit-row"><strong>Submitted: ${submitted} of ${REGIONS.length}</strong><span>${remaining} remaining</span><span>Picks reveal at lock</span></div>`;
+    return `<article class="simple-match-card ${res ? 'is-final' : ''}">
+      <div class="simple-match-head">
+        <span class="match-number">Match ${esc(m.id)}</span>
+        <span class="stage-badge ${stageClass(m.stage)}">${esc(m.stage)}</span>
+        <span class="status-pill ${status.cls}">${status.label}</span>
       </div>
-      <div class="wc-match-body">
-        ${teamPanelHtml(m.homeTeam, 'Team A', 'home')}
-        <div class="vs-column">
-          <div class="ball-icon">⚽</div>
-          <div class="vs-text">VS</div>
-          <div class="group-text">${m.group ? `Group<br>${esc(m.group)}` : esc(m.stage)}</div>
-        </div>
-        ${teamPanelHtml(m.awayTeam, 'Team B', 'away')}
+      <div class="simple-teams">
+        ${simpleTeamHtml(m.homeTeam)}
+        <div class="simple-vs">VS</div>
+        ${simpleTeamHtml(m.awayTeam)}
       </div>
-      <div class="match-meta-row">
-        <span>${esc(m.stage)}${m.group ? ` · Group ${esc(m.group)}` : ''}</span>
-        <span>${esc(m.venue)} · ${esc(m.city)}</span>
-        ${res ? `<span class="stage">Result: ${esc(resultName(m,res))}</span>` : ''}
+      ${scoreHtml}
+      <div class="simple-details">
+        <span>${prettyLongDate(m.date)}</span>
+        <span>${esc(m.timeET)} ET</span>
+        <span>${esc(m.venue)}${m.city ? ` · ${esc(m.city)}` : ''}</span>
       </div>
-      ${lockHtml}
-      ${revealBanner}
-      ${pickSummaryHtml(m, locked)}
+      ${lockNoticeHtml(m)}
+      <div class="simple-reveal">${locked ? 'Regional selections are visible.' : 'Regional selections will be revealed at lock time.'}</div>
       <div class="pick-panel">${buttons}</div>
-      <div class="picks">${picks}</div>
+      <div class="picks simple-picks">${pickArea}</div>
     </article>`;
   }
 
-  function teamPanelHtml(team, label, side){
-    const url = flagUrl(team);
-    const bg = url ? ` style="background-image:linear-gradient(90deg, rgba(7,19,31,.08), rgba(7,19,31,.08)), url('${esc(url)}')"` : '';
-    const placeholder = url ? '' : ' no-flag';
-    return `<div class="flag-panel ${side}${placeholder}"${bg}>
-      <div class="team-label-card">
-        <span>${esc(label)}</span>
-        <strong>${esc(team)}</strong>
-      </div>
-    </div>`;
+  function simpleTeamHtml(team){
+    return `<div class="simple-team">${flagFor(team)}<strong>${esc(team)}</strong></div>`;
+  }
+
+  function scoreText(m){
+    const s = scoreFor(m);
+    if(!s || s.homeScore === null || s.awayScore === null || s.homeScore === undefined || s.awayScore === undefined) return '';
+    return `${s.homeScore} - ${s.awayScore}`;
+  }
+
+  function matchStatus(m, locked, res){
+    if(res) return { label:'Final', cls:'final' };
+    if(locked) return { label:'Locked', cls:'locked' };
+    const lock = lockDate(m).getTime();
+    const now = Date.now();
+    if(lock - now <= 24 * 60 * 60 * 1000) return { label:'Locks Soon', cls:'soon' };
+    return { label:'Open', cls:'open' };
+  }
+
+  function pickChipsHtml(m){
+    return REGIONS.map(r => {
+      const pick = state.picks[r.id]?.[m.id];
+      const pts = pointsFor(m,pick);
+      const cls = pts === 3 || pts === 1 ? 'correct' : pts === 0 ? 'wrong' : pick === 'DRAW' ? 'draw' : '';
+      const label = pick ? pickLabel(m,pick) : (isPickLocked(m) ? 'No Pick' : 'No pick');
+      return `<div class="pick-chip ${cls}"><span>${esc(r.name)}</span><strong>${esc(label)}</strong></div>`;
+    }).join('');
   }
 
   function onPick(e){
