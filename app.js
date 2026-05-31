@@ -22,6 +22,7 @@
   let activeRegion = null;
   let adminUnlocked = false;
   let activeGroup = null;
+  let activeBracketRound = 'All';
   let db = null;
   let docRef = null;
   let firebaseReady = false;
@@ -540,7 +541,7 @@
     const buttons = activeRegion
       ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div><p class="meta">${locked ? 'Picks locked for this match.' : 'Only your region pick is visible before lock.'}</p>`
       : '<p class="meta">Unlock your region to submit picks. Public picks stay hidden until lock.</p>';
-    const scoreHtml = res ? `<div class="simple-score">${scoreText(m)}<span>${esc(resultName(m,res))}</span></div>` : '';
+    const scoreHtml = res ? `<div class="simple-score">${matchCardScoreText(m)}<span>${esc(resultName(m,res))}</span></div>` : '';
     const pickArea = locked ? `<div class="pick-chip-grid">${pickChipsHtml(m)}</div>${pickSummaryHtml(m, true)}` : `<div class="simple-submit-row"><strong>Submitted: ${submitted} of ${REGIONS.length}</strong><span>${remaining} remaining</span><span>Picks reveal at lock</span></div>`;
     return `<article class="simple-match-card ${res ? 'is-final' : ''}">
       <div class="simple-match-head">
@@ -570,10 +571,10 @@
     return `<div class="simple-team">${flagFor(team)}<strong>${esc(team)}</strong></div>`;
   }
 
-  function scoreText(m){
+  function matchCardScoreText(m){
     const s = scoreFor(m);
     if(!s || s.homeScore === null || s.awayScore === null || s.homeScore === undefined || s.awayScore === undefined) return '';
-    return `${s.homeScore} - ${s.awayScore}`;
+    return `${esc(s.homeScore)} - ${esc(s.awayScore)}`;
   }
 
   function matchStatus(m, locked, res){
@@ -827,13 +828,98 @@
   }
   function renderBracket(){
     const el = $('bracketGrid'); if(!el) return;
-    const stageOrder = ['Round of 32','Round of 16','Quarter-finals','Semi-finals','Third Place','Final'];
-    const ms = matches().filter(m => stageOrder.includes(m.stage)).sort((a,b) => Number(a.id) - Number(b.id));
-    el.innerHTML = stageOrder.map(stage => {
-      const rows = ms.filter(m => m.stage === stage);
+    const stageOrder = ['Round of 32','Round of 16','Quarter-finals','Semi-finals','Final','Third Place'];
+    const tabLabels = ['All', ...stageOrder];
+    const tabs = $('bracketRoundTabs');
+    if(tabs){
+      tabs.innerHTML = tabLabels.map(label => `<button type="button" class="bracket-tab ${label === activeBracketRound ? 'active' : ''}" data-bracket-round="${esc(label)}">${esc(shortRoundLabel(label))}</button>`).join('');
+      tabs.querySelectorAll('[data-bracket-round]').forEach(btn => btn.addEventListener('click', () => {
+        activeBracketRound = btn.getAttribute('data-bracket-round') || 'All';
+        renderBracket();
+      }));
+    }
+
+    renderChampionCard();
+
+    const all = matches().filter(m => stageOrder.includes(m.stage)).sort((a,b) => Number(a.id) - Number(b.id));
+    const visibleStages = activeBracketRound === 'All' ? stageOrder : [activeBracketRound];
+    const advanceMap = knockoutAdvanceMap(all);
+    el.classList.toggle('single-round', activeBracketRound !== 'All');
+    el.innerHTML = visibleStages.map(stage => {
+      const rows = all.filter(m => m.stage === stage);
       if(!rows.length) return '';
-      return `<div class="bracket-stage"><h3>${esc(stage)}</h3>${rows.map(m => `<div class="bracket-match"><span>#${esc(m.id)}</span><strong>${flagFor(m.homeTeam)} ${esc(m.homeTeam)}</strong><em>${scoreText(m.homeScore)} - ${scoreText(m.awayScore)}</em><strong>${flagFor(m.awayTeam)} ${esc(m.awayTeam)}</strong></div>`).join('')}</div>`;
+      return `<div class="bracket-round"><h3>${esc(stage)}</h3><div class="bracket-round-list">${rows.map(m => bracketMatchCard(m, advanceMap)).join('')}</div></div>`;
     }).join('');
+  }
+
+  function shortRoundLabel(label){
+    if(label === 'Round of 32') return 'R32';
+    if(label === 'Round of 16') return 'R16';
+    if(label === 'Quarter-finals') return 'QF';
+    if(label === 'Semi-finals') return 'SF';
+    if(label === 'Third Place') return '3rd';
+    return label;
+  }
+
+  function knockoutAdvanceMap(allMatches){
+    const map = {};
+    allMatches.forEach(next => {
+      ['homeTeam','awayTeam'].forEach(slot => {
+        const text = String(next[slot] || '');
+        const winner = text.match(/^Match (\d+) Winner$/i);
+        const loser = text.match(/^Match (\d+) Loser$/i);
+        if(winner){
+          const id = winner[1];
+          map[id] = map[id] || [];
+          map[id].push({ type:'Winner', nextId:next.id });
+        }
+        if(loser){
+          const id = loser[1];
+          map[id] = map[id] || [];
+          map[id].push({ type:'Loser', nextId:next.id });
+        }
+      });
+    });
+    return map;
+  }
+
+  function bracketMatchCard(m, advanceMap){
+    const res = resultFor(m);
+    const tied = res === 'DRAW';
+    const homeWinner = res === 'HOME';
+    const awayWinner = res === 'AWAY';
+    const score = hasScore(m) ? `${scoreText(m.homeScore)} - ${scoreText(m.awayScore)}` : 'TBD';
+    const advance = advanceText(m, advanceMap);
+    const status = !hasScore(m) ? 'TBD' : tied ? 'Needs winner' : 'Final';
+    return `<article class="bracket-card ${res && !tied ? 'complete' : ''} ${tied ? 'needs-winner' : ''}">
+      <div class="bracket-card-head"><span>Match ${esc(m.id)}</span><small>${esc(m.stage)}</small></div>
+      <div class="bracket-team ${homeWinner ? 'winner' : ''}">${flagFor(m.homeTeam)}<strong>${esc(m.homeTeam || 'TBD')}</strong><span>${scoreText(m.homeScore)}</span></div>
+      <div class="bracket-team ${awayWinner ? 'winner' : ''}">${flagFor(m.awayTeam)}<strong>${esc(m.awayTeam || 'TBD')}</strong><span>${scoreText(m.awayScore)}</span></div>
+      <div class="bracket-footer"><span class="bracket-status">${esc(status)}</span><span>${esc(advance)}</span></div>
+    </article>`;
+  }
+
+  function hasScore(m){
+    return !(m.homeScore === null || m.homeScore === undefined || m.homeScore === '' || m.awayScore === null || m.awayScore === undefined || m.awayScore === '');
+  }
+
+  function advanceText(m, advanceMap){
+    if(m.stage === 'Final') return 'Champion decided here';
+    if(m.stage === 'Third Place') return 'Third place decided here';
+    const items = advanceMap[String(m.id)] || [];
+    if(!items.length) return 'Advancement TBD';
+    return items.map(item => `${item.type} advances to Match ${item.nextId}`).join(' · ');
+  }
+
+  function renderChampionCard(){
+    const el = $('championCard'); if(!el) return;
+    const final = matches().find(m => m.stage === 'Final');
+    if(!final || !hasScore(final)){ el.innerHTML = '<div class="champion-placeholder">Champion card appears after the Final score is entered.</div>'; return; }
+    const res = resultFor(final);
+    if(!res || res === 'DRAW'){ el.innerHTML = '<div class="champion-placeholder">Final needs a winner before a champion is shown.</div>'; return; }
+    const champion = res === 'HOME' ? final.homeTeam : final.awayTeam;
+    const score = `${scoreText(final.homeScore)} - ${scoreText(final.awayScore)}`;
+    el.innerHTML = `<div class="champion-inner"><span>🏆 Champion</span><strong>${flagFor(champion)} ${esc(champion)}</strong><em>Final: ${esc(score)}</em></div>`;
   }
   function renderInsights(){
     renderPodium(); renderProfiles(); renderCompetitionInsights();

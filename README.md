@@ -50,3 +50,10 @@ GitHub Pages update checklist:
 3. Wait 1 to 3 minutes for Pages to rebuild.
 4. Hard refresh the site. On iPhone or iPad, close Safari tab and reopen the GitHub Pages URL.
 5. Confirm the footer shows Build 20260530-standings-header-fix.
+
+
+Knockout bracket chart update:
+- Added full bracket chart view on desktop.
+- Added round filter tabs for mobile and focused viewing.
+- Added champion card after Final score entry.
+- Bracket uses automatic advancement from group and knockout results.
