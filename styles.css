@@ -670,3 +670,7 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
     grid-template-columns:1fr;
   }
 }
+
+/* Group standings full columns */
+.simple-group-table{min-width:880px;}
+.group-form-icons{justify-content:center;}

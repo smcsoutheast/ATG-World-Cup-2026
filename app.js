@@ -300,6 +300,15 @@
     }).join('')}</span>`;
   }
 
+  function groupFormIcons(form){
+    const items = Array.isArray(form) ? form.slice(-3) : String(form || '').split(/\s+/).filter(Boolean).slice(-3);
+    if(!items.length) return '<span class="form-empty">-</span>';
+    return `<span class="form-icons group-form-icons">${items.map(x => {
+      const key = x === 'W' ? 'win' : x === 'D' ? 'draw' : 'loss';
+      return `<span class="form-icon ${key}">${esc(x)}</span>`;
+    }).join('')}</span>`;
+  }
+
   function renderStandings(){
     const tbody = document.querySelector('#standingsTable tbody');
     const prev = state.previousRanks || {};
@@ -383,9 +392,9 @@
       const away = groups[m.group].teams[m.awayTeam];
       home.p++; away.p++;
       home.gf += h; home.ga += a; away.gf += a; away.ga += h;
-      if(h > a){ home.w++; away.l++; home.pts += 3; }
-      else if(a > h){ away.w++; home.l++; away.pts += 3; }
-      else { home.d++; away.d++; home.pts++; away.pts++; }
+      if(h > a){ home.w++; away.l++; home.pts += 3; home.form.push('W'); away.form.push('L'); }
+      else if(a > h){ away.w++; home.l++; away.pts += 3; away.form.push('W'); home.form.push('L'); }
+      else { home.d++; away.d++; home.pts++; away.pts++; home.form.push('D'); away.form.push('D'); }
       home.gd = home.gf - home.ga;
       away.gd = away.gf - away.ga;
     });
@@ -393,7 +402,7 @@
     return groups;
   }
 
-  function baseTeam(team){ return { team, p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, h2hPts:0, h2hGd:0, h2hGf:0 }; }
+  function baseTeam(team){ return { team, p:0, w:0, d:0, l:0, gf:0, ga:0, gd:0, pts:0, form:[], h2hPts:0, h2hGd:0, h2hGf:0 }; }
 
   function rankGroup(teams, groupMatches){
     const byPoints = {};
@@ -462,10 +471,10 @@
 
   function groupTableHtml(group, rows, advancingThirdGroups){
     const groupKey = String(group).toUpperCase();
-    const tableRows = rows.map((r,i) => `<tr class="${groupRowClass(i, groupKey, advancingThirdGroups)}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.pts}</td><td>${formatGoalDiff(r.gd)}</td><td>${qualificationStatus(i, groupKey, advancingThirdGroups)}</td></tr>`).join('');
+    const tableRows = rows.map((r,i) => `<tr class="${groupRowClass(i, groupKey, advancingThirdGroups)}"><td>${i+1}. ${flagFor(r.team)} ${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td>${formatGoalDiff(r.gd)}</td><td>${r.pts}</td><td>${groupFormIcons(r.form)}</td><td>${qualificationStatus(i, groupKey, advancingThirdGroups)}</td></tr>`).join('');
     return `<div class="group-card simple-group-card">
       <h3>Group ${esc(groupKey)}</h3>
-      <div class="group-table-wrap"><table class="group-table simple-group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th><th>GD</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table></div>
+      <div class="group-table-wrap"><table class="group-table simple-group-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th><th>Form</th><th>Knockout</th></tr></thead><tbody>${tableRows}</tbody></table></div>
       ${groupSummaryCards(groupKey, rows, advancingThirdGroups)}
       <details class="tie-break-details"><summary>FIFA tie-break order</summary><p>Head-to-head points, head-to-head goal difference, head-to-head goals scored, overall goal difference, then overall goals scored.</p></details>
     </div>`;
