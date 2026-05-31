@@ -24,6 +24,8 @@
   let activeGroup = null;
   let activeBracketRound = 'All';
   let activeInsightRegion = REGIONS[0].id;
+  let selectedStage = 'All Stages';
+  let selectedDate = '';
   let db = null;
   let docRef = null;
   let firebaseReady = false;
@@ -514,20 +516,65 @@
     if(!rows.length) return '<p class="meta">No qualifiers yet.</p>';
     return `<ol>${rows.map(r => `<li>${flagFor(r.team)} ${esc(r.team)}${showGroup ? ` <span class="meta">Group ${esc(r.group)}</span>` : ''}</li>`).join('')}</ol>`;
   }
+  function shortStageLabel(stage){
+    return ({
+      'All Stages':'All',
+      'Group Stage':'Group',
+      'Round of 32':'R32',
+      'Round of 16':'R16',
+      'Quarter-finals':'QF',
+      'Semi-finals':'SF',
+      'Third Place':'Third',
+      'Final':'Final'
+    })[stage] || stage;
+  }
+  function uniqueMatchDates(){
+    return [...new Set(matches().map(m => m.date).filter(Boolean).sort())];
+  }
+  function isoToday(offsetDays){
+    const d = new Date();
+    d.setDate(d.getDate() + (offsetDays || 0));
+    return d.toISOString().slice(0,10);
+  }
+  function nextMatchDate(fromDate){
+    const dates = uniqueMatchDates();
+    return dates.find(d => d >= fromDate) || dates[0] || 'All Dates';
+  }
+  function defaultMatchDate(){
+    return nextMatchDate(isoToday(0));
+  }
+  function resolveQuickDate(value){
+    if(value === 'TODAY') return nextMatchDate(isoToday(0));
+    if(value === 'TOMORROW') return nextMatchDate(isoToday(1));
+    if(value === 'NEXT') return nextMatchDate(isoToday(0));
+    return value;
+  }
   function renderFilters(){
-    $('stageFilter').innerHTML = STAGES.map(s => `<option>${esc(s)}</option>`).join('');
-    const dates = ['All Dates', ...new Set(matches().map(m => m.date).sort())];
-    $('dateFilter').innerHTML = dates.map(d => `<option value="${esc(d)}">${d === 'All Dates' ? d : prettyDate(d)}</option>`).join('');
+    const dates = uniqueMatchDates();
+    if(!selectedDate) selectedDate = defaultMatchDate();
+    if(!dates.includes(selectedDate) && selectedDate !== 'All Dates') selectedDate = defaultMatchDate();
+    $('stageFilterButtons').innerHTML = STAGES.map(stage => `<button type="button" class="filter-chip ${selectedStage === stage ? 'active' : ''}" data-stage="${esc(stage)}" title="${esc(stage)}">${esc(shortStageLabel(stage))}</button>`).join('');
+    const quick = [
+      { value:'All Dates', label:'All Days' },
+      { value:'TODAY', label:'Today' },
+      { value:'TOMORROW', label:'Tomorrow' },
+      { value:'NEXT', label:'Next Matchday' }
+    ];
+    const quickHtml = quick.map(item => {
+      const resolved = resolveQuickDate(item.value);
+      const active = item.value === 'All Dates' ? selectedDate === 'All Dates' : selectedDate === resolved;
+      return `<button type="button" class="filter-chip ${active ? 'active' : ''}" data-date="${esc(item.value)}">${esc(item.label)}</button>`;
+    }).join('');
+    const dateHtml = dates.map(d => `<button type="button" class="filter-chip date-filter-chip ${selectedDate === d ? 'active' : ''}" data-date="${esc(d)}">${esc(prettyShortDate(d))}</button>`).join('');
+    $('dateFilterButtons').innerHTML = quickHtml + dateHtml;
   }
   function filteredMatches(){
-    const stage = $('stageFilter').value;
-    const date = $('dateFilter').value;
-    const q = $('searchBox').value.trim().toLowerCase();
+    const stage = selectedStage || 'All Stages';
+    const date = selectedDate || defaultMatchDate();
     return matches().filter(m => {
       const stageOk = stage === 'All Stages' || m.stage === stage;
       const dateOk = date === 'All Dates' || m.date === date;
-      const hay = `${m.homeTeam} ${m.awayTeam} ${m.venue} ${m.city} ${m.country} ${m.stage}`.toLowerCase();
-      return stageOk && dateOk && (!q || hay.includes(q));
+      return stageOk && dateOk;
     });
   }
   function renderMatches(){
@@ -1347,7 +1394,26 @@
       renderMatches();
     });
     $('regionCode').addEventListener('keydown', e => { if(e.key === 'Enter') $('regionUnlock').click(); });
-    ['stageFilter','dateFilter','searchBox'].forEach(id => $(id).addEventListener('input', renderMatches));
+    $('stageFilterButtons').addEventListener('click', e => {
+      const btn = e.target.closest('[data-stage]');
+      if(!btn) return;
+      selectedStage = btn.getAttribute('data-stage');
+      renderFilters();
+      renderMatches();
+    });
+    $('dateFilterButtons').addEventListener('click', e => {
+      const btn = e.target.closest('[data-date]');
+      if(!btn) return;
+      selectedDate = resolveQuickDate(btn.getAttribute('data-date'));
+      renderFilters();
+      renderMatches();
+    });
+    $('clearFilters').addEventListener('click', () => {
+      selectedStage = 'All Stages';
+      selectedDate = defaultMatchDate();
+      renderFilters();
+      renderMatches();
+    });
     $('tabAtg').addEventListener('click', () => setTab('atg'));
     $('tabGroups').addEventListener('click', () => setTab('groups'));
     $('tabBracket').addEventListener('click', () => setTab('bracket'));
@@ -1397,6 +1463,10 @@
   function prettyLongDate(d){
     const dt = new Date(d + 'T12:00:00');
     return dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  }
+  function prettyShortDate(d){
+    const dt = new Date(d + 'T12:00:00');
+    return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   }
   function esc(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
   function scoreText(v){ return v === null || v === undefined || v === '' ? '-' : esc(v); }

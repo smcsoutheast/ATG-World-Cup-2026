@@ -735,3 +735,56 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
 .countdown-panel h2{
   margin:0;
 }
+
+
+/* Simple match filter buttons */
+.filter-panel{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+}
+.filter-section{
+  display:grid;
+  gap:10px;
+}
+.filter-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  color:var(--muted);
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:12px;
+}
+.filter-button-row{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:4px;
+  scrollbar-width:thin;
+}
+.filter-chip{
+  flex:0 0 auto;
+  background:transparent;
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:9px 12px;
+  font-size:13px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.filter-chip.active{
+  background:var(--gold);
+  color:#111827;
+  border-color:var(--gold);
+}
+.date-filter-chip{
+  min-width:74px;
+}
+@media (max-width:760px){
+  .filter-panel{gap:14px;}
+  .filter-button-row{margin-inline:-2px;padding-inline:2px;}
+}

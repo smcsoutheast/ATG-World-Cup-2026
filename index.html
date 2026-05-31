@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Around the Grounds | World Cup 2026</title>
-  <link rel="stylesheet" href="styles.css?v=20260531-tournament-clock">
+  <link rel="stylesheet" href="styles.css?v=20260531-filter-buttons">
 </head>
 <body>
   <header class="hero">
@@ -95,16 +95,18 @@
       <div id="competitionInsights" class="insight-grid"></div>
     </section>
 
-    <section class="panel controls">
-      <label>Stage
-        <select id="stageFilter"></select>
-      </label>
-      <label>Date
-        <select id="dateFilter"></select>
-      </label>
-      <label>Search
-        <input id="searchBox" placeholder="Team, venue, city">
-      </label>
+    <section class="panel controls filter-panel">
+      <div class="filter-section">
+        <div class="filter-head">
+          <span>Stage</span>
+          <button id="clearFilters" class="ghost small" type="button">Clear filters</button>
+        </div>
+        <div id="stageFilterButtons" class="filter-button-row" aria-label="Stage filters"></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-head"><span>Day</span></div>
+        <div id="dateFilterButtons" class="filter-button-row" aria-label="Day filters"></div>
+      </div>
     </section>
 
     <section class="panel entry-panel">
@@ -147,10 +149,10 @@
   <button id="adminOpen" class="admin-shield" aria-label="Open super admin">🛡️</button>
 
   <footer>
-    Soccer Management Company, Around the Grounds, World Cup 2026 Edition<br><small>Build 20260531-tournament-clock</small>
+    Soccer Management Company, Around the Grounds, World Cup 2026 Edition<br><small>Build 20260531-filter-buttons</small>
   </footer>
 
-  <script src="schedule.js?v=20260531-tournament-clock"></script>
+  <script src="schedule.js?v=20260531-filter-buttons"></script>
   <script>
     window.ATG_FIREBASE_CONFIG = {
       apiKey: "AIzaSyBzQRQIQ7gqRuFV_64oUMbApIQSRcnjcnk",
@@ -163,6 +165,6 @@
   </script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=20260531-tournament-clock"></script>
+  <script src="app.js?v=20260531-filter-buttons"></script>
 </body>
 </html>
