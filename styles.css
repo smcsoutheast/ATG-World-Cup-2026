@@ -215,16 +215,10 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
   border-radius:3px;
   vertical-align:-3px;
   margin-right:7px;
-  display:inline-grid;
-  place-items:center;
+  display:inline-block;
   line-height:1;
   box-shadow:0 0 0 1px rgba(255,255,255,.18);
   background:rgba(255,255,255,.1);
-}
-.flag-emoji{
-  font-size:20px;
-  box-shadow:none;
-  background:transparent;
 }
 .flag-empty{
   display:inline-grid;
@@ -412,8 +406,7 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
   width:24px;
   height:24px;
   border-radius:999px;
-  display:inline-grid;
-  place-items:center;
+  display:inline-block;
   font-weight:950;
   font-size:12px;
   line-height:1;
@@ -900,6 +893,10 @@ footer{
   .hero-copy h1{letter-spacing:-1px;}
 }
 
-.simple-team .flag-emoji{width:54px;height:36px;font-size:34px;margin-right:0;}
-.bracket-team .flag-emoji{font-size:22px;}
-.game-title .flag-emoji,.group-table .flag-emoji,.mini-table .flag-emoji{font-size:18px;}
+
+.flag-img{
+  display:inline-block;
+  object-fit:cover;
+  background:#fff;
+}
+.bracket-team .flag-img,.game-title .flag-img,.group-table .flag-img,.mini-table .flag-img{width:28px;height:19px;border-radius:3px;vertical-align:middle;margin-right:6px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}

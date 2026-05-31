@@ -1444,19 +1444,15 @@
     if(tab === 'insights') renderInsights();
   }
 
-  function countryFlagEmoji(code){
+  function flagAssetPath(code){
     if(!code) return '';
-    const special = { 'GB-ENG':'🏴', 'GB-SCT':'🏴' };
-    if(special[code]) return special[code];
-    const clean = String(code).toUpperCase();
-    if(!/^[A-Z]{2}$/.test(clean)) return '';
-    return clean.replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
+    return `assets/flags/${String(code).toLowerCase().replace(/[^a-z0-9]+/g,'-')}.png`;
   }
 
   function flagFor(team){
-    const emoji = countryFlagEmoji(COUNTRY_CODES[team]);
-    if(!emoji) return '<span class="flag-small flag-empty" aria-hidden="true"></span>';
-    return `<span class="flag-small flag-emoji" role="img" aria-label="${esc(team)} flag">${emoji}</span>`;
+    const code = COUNTRY_CODES[team];
+    if(!code) return '<span class="flag-small flag-empty" aria-hidden="true"></span>';
+    return `<img class="flag-small flag-img" src="${flagAssetPath(code)}" alt="${esc(team)} flag" loading="lazy" onerror="this.replaceWith(document.createElement('span'))">`;
   }
 
   function prettyDate(d){

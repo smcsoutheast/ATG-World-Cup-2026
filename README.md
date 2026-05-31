@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260531-final-check`
+Build: `20260531-png-flags`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260531-final-check`.
+6. Confirm the footer shows `Build 20260531-png-flags`.
 
 Hard refresh tips:
 
@@ -412,7 +412,7 @@ Check:
 
 The logo and favicon are embedded directly in `index.html`.
 
-Flags use built-in emoji fallback, so no external flag image host is required.
+Flags use local PNG files from assets/flags. No flag emojis or external flag image host are used.
 
 The `assets` folder is included as backup.
 
@@ -448,7 +448,7 @@ Completed before this ZIP was created:
 - Cache-busting query strings updated
 - README rewritten
 - Logo and favicon checked as embedded data
-- No external flag image dependency found
+- Local PNG flag assets included in assets/flags
 - Firestore rules file included
 
 ## Recommended minor updates during the event
