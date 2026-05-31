@@ -692,3 +692,46 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
 .clean-admin-actions{justify-content:flex-start}
 .audit-box{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
 @media (max-width:900px){.clean-admin-row,.lock-only-row{grid-template-columns:1fr 1fr}.clean-admin-row>div:first-child,.clean-admin-row .game-title,.admin-warning,.lock-only-row>div:first-child,.lock-only-row .game-title{grid-column:1/-1}.clean-admin-row select{grid-column:1/-1}.admin-completed-line{display:grid}}
+
+/* Clean tournament clock */
+.countdown-panel{
+  text-align:center;
+  align-items:center;
+  justify-items:center;
+  padding:20px 18px;
+}
+.clock-top-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.clock-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:7px 11px;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.14);
+}
+.clock-status.pre{background:rgba(244,201,93,.16);color:var(--gold);border-color:rgba(244,201,93,.28)}
+.clock-status.live{background:rgba(65,211,125,.14);color:var(--green);border-color:rgba(65,211,125,.28)}
+.clock-status.final{background:rgba(98,182,255,.16);color:var(--blue);border-color:rgba(98,182,255,.28)}
+.clock-status.complete{background:rgba(244,201,93,.2);color:var(--gold);border-color:rgba(244,201,93,.4)}
+.clock-status.bad{background:rgba(255,107,107,.14);color:var(--red);border-color:rgba(255,107,107,.3)}
+.clock-detail{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:800;
+}
+.countdown-panel h2{
+  margin:0;
+}

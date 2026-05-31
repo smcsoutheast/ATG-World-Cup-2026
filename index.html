@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Around the Grounds | World Cup 2026</title>
-  <link rel="stylesheet" href="styles.css?v=20260531-clean-super-admin">
+  <link rel="stylesheet" href="styles.css?v=20260531-tournament-clock">
 </head>
 <body>
   <header class="hero">
@@ -18,8 +18,12 @@
   <main>
     <section class="panel countdown-panel" id="overallCountdown">
       <p class="eyebrow">Tournament Clock</p>
-      <h2 id="overallCountdownTitle">Loading countdown</h2>
+      <div class="clock-top-row">
+        <h2 id="overallCountdownTitle">Loading countdown</h2>
+        <span id="overallCountdownStatus" class="clock-status">Loading</span>
+      </div>
       <p id="overallCountdownValue" class="countdown-large">--</p>
+      <p id="overallCountdownDetail" class="clock-detail">Loading tournament schedule</p>
     </section>
 
     <section class="panel tab-panel">
@@ -126,7 +130,7 @@
       <div class="section-title">
         <div>
           <p class="eyebrow">Super Admin</p>
-          <h2>Control Panel</h2>
+          <h2>Scores</h2>
         </div>
         <button class="ghost" value="close">Close</button>
       </div>
@@ -143,10 +147,10 @@
   <button id="adminOpen" class="admin-shield" aria-label="Open super admin">🛡️</button>
 
   <footer>
-    Soccer Management Company, Around the Grounds, World Cup 2026 Edition<br><small>Build 20260531-clean-super-admin</small>
+    Soccer Management Company, Around the Grounds, World Cup 2026 Edition<br><small>Build 20260531-tournament-clock</small>
   </footer>
 
-  <script src="schedule.js?v=20260531-clean-super-admin"></script>
+  <script src="schedule.js?v=20260531-tournament-clock"></script>
   <script>
     window.ATG_FIREBASE_CONFIG = {
       apiKey: "AIzaSyBzQRQIQ7gqRuFV_64oUMbApIQSRcnjcnk",
@@ -159,6 +163,6 @@
   </script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script src="app.js?v=20260531-clean-super-admin"></script>
+  <script src="app.js?v=20260531-tournament-clock"></script>
 </body>
 </html>

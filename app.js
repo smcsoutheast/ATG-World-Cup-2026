@@ -860,24 +860,100 @@
   function updateOverallCountdown(){
     const title = $('overallCountdownTitle');
     const value = $('overallCountdownValue');
+    const detail = $('overallCountdownDetail');
+    const status = $('overallCountdownStatus');
     if(!title || !value) return;
+
+    const setClock = (label, timeValue, detailText, statusText, statusClass) => {
+      title.textContent = label;
+      value.textContent = timeValue;
+      if(detail) detail.textContent = detailText || '';
+      if(status){
+        status.textContent = statusText || '';
+        status.className = `clock-status ${statusClass || ''}`.trim();
+      }
+    };
+
     const ms = matches().slice().sort((a,b) => kickoffDate(a) - kickoffDate(b));
-    if(!ms.length){ title.textContent = 'No matches loaded'; value.textContent = '--'; return; }
+    if(!ms.length){
+      setClock('Tournament Clock', '--', 'No matches loaded', 'No Schedule', 'bad');
+      return;
+    }
+
     const now = Date.now();
     const first = ms[0];
     const final = ms.find(m => m.stage === 'Final') || ms[ms.length - 1];
     const firstKick = kickoffDate(first).getTime();
     const finalKick = kickoffDate(final).getTime();
+    const next = ms.find(m => kickoffDate(m).getTime() > now);
+
     if(now < firstKick){
-      title.textContent = 'Countdown to first kickoff';
-      value.textContent = formatDuration(firstKick - now);
-    } else if(now < finalKick){
-      title.textContent = 'Countdown to final kickoff';
-      value.textContent = formatDuration(finalKick - now);
-    } else {
-      title.textContent = 'Final kickoff has started';
-      value.textContent = 'Tournament clock complete';
+      setClock(
+        'World Cup starts in',
+        formatDuration(firstKick - now),
+        `First kickoff: ${matchClockLabel(first)}`,
+        'Pre-Tournament',
+        'pre'
+      );
+      return;
     }
+
+    if(next){
+      const isFinalNext = String(next.stage || '').toLowerCase() === 'final';
+      setClock(
+        isFinalNext ? 'Final kickoff' : 'Next kickoff',
+        formatDuration(kickoffDate(next).getTime() - now),
+        matchClockLabel(next),
+        isFinalNext ? 'Final Day' : 'Live',
+        isFinalNext ? 'final' : 'live'
+      );
+      return;
+    }
+
+    const finalResult = final ? resultFor(final) : null;
+    if(final && hasScore(final) && finalResult && finalResult !== 'DRAW'){
+      const champion = finalResult === 'HOME' ? final.homeTeam : final.awayTeam;
+      setClock(
+        'Tournament complete',
+        'Champion crowned',
+        `Champion: ${champion || 'TBD'}`,
+        'Complete',
+        'complete'
+      );
+      return;
+    }
+
+    if(now >= finalKick){
+      setClock(
+        'Final kickoff',
+        'Awaiting final result',
+        final ? matchClockLabel(final) : 'Final match pending',
+        'Final Day',
+        'final'
+      );
+      return;
+    }
+
+    setClock('Tournament Clock', '--', 'Schedule pending', 'Live', 'live');
+  }
+
+  function matchClockLabel(m){
+    if(!m) return '';
+    const teams = `${m.homeTeam || 'TBD'} vs ${m.awayTeam || 'TBD'}`;
+    const dateText = formatClockDate(m);
+    return `Match ${m.id}: ${teams}, ${dateText}`;
+  }
+
+  function formatClockDate(m){
+    if(!m || !m.date) return 'Time TBD';
+    const [year, month, day] = String(m.date).split('-').map(Number);
+    const date = new Date(year, (month || 1) - 1, day || 1);
+    const dateText = date.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+    const time = normalizeTime(m.timeET || '00:00');
+    const [h, min] = time.split(':').map(Number);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${dateText}, ${hour}:${String(min || 0).padStart(2,'0')} ${suffix} ET`;
   }
 
   function formatDuration(ms){
