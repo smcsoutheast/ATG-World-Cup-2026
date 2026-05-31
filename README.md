@@ -42,14 +42,14 @@ E/F/G/I/J
 D/E/I/J/L
 
 
-Build: 20260531-filter-buttons
+Build: 20260531-image-fix
 
 GitHub Pages update checklist:
 1. Upload every file from the ZIP to the repository root.
 2. Confirm index.html is at the root, not inside a folder.
 3. Wait 1 to 3 minutes for Pages to rebuild.
 4. Hard refresh the site. On iPhone or iPad, close Safari tab and reopen the GitHub Pages URL.
-5. Confirm the footer shows Build 20260531-filter-buttons.
+5. Confirm the footer shows Build 20260531-image-fix.
 
 
 Knockout bracket chart update:
@@ -77,3 +77,6 @@ Filter update:
 - Stage and day filters are button tabs.
 - Search and dropdown filters were removed.
 - Clear filters resets to all stages and the next matchday.
+
+
+Image fix: logo and favicon are embedded in index.html. Flags use built-in emoji fallback, so no external flag image host is required.

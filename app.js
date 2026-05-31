@@ -1444,16 +1444,19 @@
     if(tab === 'insights') renderInsights();
   }
 
-  function flagUrl(team){
-    const code = COUNTRY_CODES[team];
+  function countryFlagEmoji(code){
     if(!code) return '';
-    return `https://flagcdn.com/w320/${code.toLowerCase()}.png`;
+    const special = { 'GB-ENG':'🏴', 'GB-SCT':'🏴' };
+    if(special[code]) return special[code];
+    const clean = String(code).toUpperCase();
+    if(!/^[A-Z]{2}$/.test(clean)) return '';
+    return clean.replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
   }
 
   function flagFor(team){
-    const url = flagUrl(team);
-    if(!url) return '<span class="flag-small flag-empty"></span>';
-    return `<img class="flag-small" src="${esc(url)}" alt="${esc(team)} flag" loading="lazy">`;
+    const emoji = countryFlagEmoji(COUNTRY_CODES[team]);
+    if(!emoji) return '<span class="flag-small flag-empty" aria-hidden="true"></span>';
+    return `<span class="flag-small flag-emoji" role="img" aria-label="${esc(team)} flag">${emoji}</span>`;
   }
 
   function prettyDate(d){
