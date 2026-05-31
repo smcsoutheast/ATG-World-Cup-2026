@@ -23,6 +23,7 @@
   let adminUnlocked = false;
   let activeGroup = null;
   let activeBracketRound = 'All';
+  let activeInsightRegion = REGIONS[0].id;
   let db = null;
   let docRef = null;
   let firebaseReady = false;
@@ -922,39 +923,151 @@
     el.innerHTML = `<div class="champion-inner"><span>🏆 Champion</span><strong>${flagFor(champion)} ${esc(champion)}</strong><em>Final: ${esc(score)}</em></div>`;
   }
   function renderInsights(){
-    renderPodium(); renderProfiles(); renderCompetitionInsights();
+    const podium = $('podium');
+    const profiles = $('regionProfiles');
+    if(podium) podium.innerHTML = '';
+    if(profiles) profiles.innerHTML = '';
+    renderCompetitionInsights();
   }
-  function renderPodium(){
-    const el = $('podium'); if(!el) return;
-    const rows = calcStandings().slice(0,3);
-    const medals = ['🥇','🥈','🥉'];
-    el.innerHTML = rows.map((r,i) => `<div class="podium-card region-${r.id}"><div>${medals[i]}</div><strong>${esc(r.region)}</strong><span>${r.pts} pts · ${r.gd} GD</span></div>`).join('');
-  }
-  function renderProfiles(){
-    const el = $('regionProfiles'); if(!el) return;
-    const rows = calcStandings();
-    el.innerHTML = rows.map(r => `<div class="profile-card region-${r.id}"><h3>${esc(r.region)}</h3><p>${esc(r.members)}</p><strong>${r.w}-${r.l}-${r.d}</strong><span>Form: ${esc(r.form || '-')} · Accuracy: ${r.accuracy}% · Streak: ${esc(r.streak)}</span></div>`).join('');
-  }
+
   function renderCompetitionInsights(){
     const el = $('competitionInsights'); if(!el) return;
     const rows = calcStandings();
-    const awards = awardLeaders(rows);
-    const gf = awards.goldenBoot.slice(0,3);
-    const acc = awards.goldenBall.slice(0,3);
-    const glove = awards.goldenGlove.slice(0,3);
-    const streaks = rows.slice().sort((a,b) => currentWinStreak(b) - currentWinStreak(a) || b.accuracy - a.accuracy || b.pts - a.pts).slice(0,3);
-    const upset = upsetTracker();
-    const mod = matchOfDay();
+    if(!rows.length){ el.innerHTML = '<p class="meta">No standings data yet.</p>'; return; }
+    const leader = rows[0];
+    const best = bestFormRegion(rows);
+    const mover = biggestMoverRegion(rows);
+    const race = tightestRace(rows);
+    const spotlight = rows.find(r => r.id === activeInsightRegion) || rows[0];
+    activeInsightRegion = spotlight.id;
     el.innerHTML = `
-      <div class="insight-card"><h3>Golden Ball</h3>${acc.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.accuracy}% accuracy</p>`).join('')}</div>
-      <div class="insight-card"><h3>Golden Boot</h3>${gf.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.gf} GF</p>`).join('')}</div>
-      <div class="insight-card"><h3>Golden Glove</h3>${glove.map((r,i)=>`<p>${i+1}. ${esc(r.region)} · ${r.ga} GA</p>`).join('')}</div>
-      <div class="insight-card"><h3>Longest Current Win Streaks</h3>${streaks.map(r=>`<p>${esc(r.region)} · W${currentWinStreak(r)}</p>`).join('')}</div>
-      <div class="insight-card"><h3>Match of the Day</h3><p>${mod}</p></div>
-      <div class="insight-card"><h3>Upset Tracker</h3>${upset}</div>
-      <div class="insight-card"><h3>Rivalry Table</h3>${rivalryTable()}</div>
-      <div class="insight-card"><h3>Backup Status</h3><p>Local daily backup active. Firebase stores shared live data.</p></div>`;
+      <div class="insight-top-row">
+        ${topInsightCard('Leader', leader.region, `${leader.pts} pts · ${leader.accuracy}% acc`)}
+        ${topInsightCard('Tightest Race', race.title, race.detail)}
+        ${topInsightCard('Best Form', best.region, `${best.form || '-'} · ${best.formScore} form pts`)}
+        ${topInsightCard('Biggest Mover', mover.title, mover.detail)}
+      </div>
+      <div class="simple-insight-layout">
+        <section class="insight-panel pick-trends-panel"><h3>Pick Trends</h3>${pickTrendsPanel()}</section>
+        <section class="insight-panel region-spotlight-panel"><h3>Region Spotlight</h3>${regionSpotlightPanel(spotlight)}</section>
+        <section class="insight-panel awards-race-panel"><h3>Awards Race</h3>${awardsRacePanel(rows)}</section>
+        <section class="insight-panel upset-watch-panel"><h3>Upset Watch</h3>${upsetWatchPanel()}</section>
+      </div>`;
+    el.querySelectorAll('[data-insight-region]').forEach(btn => btn.addEventListener('click', () => {
+      activeInsightRegion = btn.dataset.insightRegion;
+      renderCompetitionInsights();
+    }));
   }
+
+  function topInsightCard(label, value, detail){
+    return `<article class="top-insight-card"><span>${esc(label)}</span><strong>${esc(value || '-')}</strong><p>${esc(detail || '')}</p></article>`;
+  }
+
+  function formScore(row){
+    return String(row.form || '').split(/\s+/).filter(Boolean).reduce((total,x) => total + (x === 'W' ? 3 : x === 'D' ? 1 : 0), 0);
+  }
+
+  function bestFormRegion(rows){
+    const sorted = rows.slice().map(r => Object.assign({}, r, { formScore:formScore(r) })).sort((a,b) => b.formScore - a.formScore || b.pts - a.pts || b.accuracy - a.accuracy || a.region.localeCompare(b.region));
+    return sorted[0] || { region:'-', form:'-', formScore:0 };
+  }
+
+  function biggestMoverRegion(rows){
+    const prev = state.previousRanks || {};
+    let best = null;
+    rows.forEach((r,i) => {
+      const current = i + 1;
+      const previous = prev[r.id] || current;
+      const move = previous - current;
+      if(!best || move > best.move) best = { region:r.region, move };
+    });
+    if(!best || best.move <= 0) return { title:'No Movement', detail:'No upward moves yet' };
+    return { title:best.region, detail:`▲ +${best.move} places` };
+  }
+
+  function tightestRace(rows){
+    if(rows.length < 2) return { title:'Need More Teams', detail:'Race appears after standings load' };
+    let best = null;
+    for(let i=0;i<rows.length-1;i++){
+      const gap = Math.abs(rows[i].pts - rows[i+1].pts);
+      if(!best || gap < best.gap) best = { a:rows[i], b:rows[i+1], gap };
+    }
+    return { title:`${best.a.region} / ${best.b.region}`, detail:`${best.gap} point gap` };
+  }
+
+  function insightMatch(){
+    const ms = matches().slice().sort((a,b) => kickoffDate(a) - kickoffDate(b));
+    const now = new Date();
+    return ms.find(m => !hasScore(m) && kickoffDate(m) >= now) || ms.find(m => !hasScore(m)) || ms[ms.length - 1] || ms[0];
+  }
+
+  function pickTrendsPanel(){
+    const m = insightMatch();
+    if(!m) return '<p class="meta">No matches loaded.</p>';
+    const submitted = REGIONS.filter(r => state.picks[r.id]?.[m.id]).length;
+    const title = `Match ${m.id}: ${m.homeTeam} vs ${m.awayTeam}`;
+    if(!isPickLocked(m)){
+      return `<p class="insight-match-title">${esc(title)}</p><div class="submitted-pill"><strong>${submitted} of ${REGIONS.length}</strong><span>submitted</span></div><p class="meta">Pick distribution appears after lock.</p>`;
+    }
+    const counts = { HOME:0, DRAW:0, AWAY:0 };
+    REGIONS.forEach(r => { const pick = state.picks[r.id]?.[m.id]; if(counts[pick] !== undefined) counts[pick]++; });
+    const items = [
+      ['HOME', m.homeTeam, counts.HOME],
+      ['DRAW', 'Draw', counts.DRAW],
+      ['AWAY', m.awayTeam, counts.AWAY]
+    ];
+    return `<p class="insight-match-title">${esc(title)}</p><div class="trend-bars">${items.map(([key,label,count]) => trendBar(label, count, REGIONS.length)).join('')}</div>`;
+  }
+
+  function trendBar(label, count, total){
+    const pct = total ? Math.round((count / total) * 100) : 0;
+    return `<div class="trend-bar"><div><strong>${esc(label)}</strong><span>${count}</span></div><i style="width:${pct}%"></i></div>`;
+  }
+
+  function regionSpotlightPanel(row){
+    const tabs = REGIONS.map(r => `<button type="button" class="spotlight-tab ${r.id === row.id ? 'active' : ''}" data-insight-region="${esc(r.id)}">${esc(r.name)}</button>`).join('');
+    return `<div class="spotlight-tabs">${tabs}</div>
+      <div class="spotlight-card region-${row.id}">
+        <strong>${esc(row.region)}</strong>
+        <p>${esc(row.members)}</p>
+        <div class="spotlight-stats">
+          <span>${row.w}-${row.d}-${row.l}<small>Record</small></span>
+          <span>${row.accuracy}%<small>Accuracy</small></span>
+          <span>${row.gf}<small>GF</small></span>
+          <span>${row.ga}<small>GA</small></span>
+        </div>
+        <div class="spotlight-form">${formIcons(row.form)}<span>${esc(row.streak)}</span></div>
+      </div>`;
+  }
+
+  function awardsRacePanel(rows){
+    const awards = awardLeaders(rows);
+    const data = [
+      ['Golden Ball', awards.goldenBall[0], r => `${r.accuracy}% acc`],
+      ['Golden Boot', awards.goldenBoot[0], r => `${r.gf} GF`],
+      ['Golden Glove', awards.goldenGlove[0], r => `${r.ga} GA`],
+      ['Hot Streak', awards.hotStreak[0], r => `W${currentWinStreak(r)}`]
+    ];
+    return `<div class="award-race-list">${data.map(([name,row,detail]) => `<div><span>${esc(name)}</span><strong>${row ? esc(row.region) : '-'}</strong><em>${row ? esc(detail(row)) : '-'}</em></div>`).join('')}</div>`;
+  }
+
+  function upsetWatchPanel(){
+    const scored = [];
+    matches().forEach(m => {
+      const res = resultFor(m); if(!res) return;
+      const correct = REGIONS.filter(r => state.picks[r.id]?.[m.id] === res);
+      if(correct.length > 0 && correct.length <= 2) scored.push(`<p><strong>Match ${esc(m.id)}</strong> ${correct.map(r=>esc(r.name)).join(', ')} called ${esc(resultName(m,res))}</p>`);
+    });
+    if(scored.length) return scored.slice(-4).join('');
+    const upcoming = matches().find(m => !hasScore(m) && isPickLocked(m));
+    if(!upcoming) return '<p class="meta">No upset watch yet.</p>';
+    const counts = { HOME:[], DRAW:[], AWAY:[] };
+    REGIONS.forEach(r => { const pick = state.picks[r.id]?.[upcoming.id]; if(counts[pick]) counts[pick].push(r.name); });
+    const rare = Object.entries(counts).filter(([,list]) => list.length > 0 && list.length <= 1);
+    if(!rare.length) return '<p class="meta">No rare picks on the current locked match.</p>';
+    return rare.map(([pick,list]) => `<p><strong>${esc(resultName(upcoming,pick))}</strong> picked by ${list.map(esc).join(', ')}</p>`).join('');
+  }
+
   function matchOfDay(){
     const ms = matches();
     if(!ms.length) return 'No matches loaded.';
@@ -967,6 +1080,7 @@
     const count = Object.values(state.picks || {}).filter(p => p && p[m.id]).length;
     return `Match ${m.id}: ${esc(m.homeTeam)} vs ${esc(m.awayTeam)} · ${count} submitted`;
   }
+
   function upsetTracker(){
     const items = [];
     matches().forEach(m => {
@@ -976,6 +1090,7 @@
     });
     return items.slice(-5).join('') || '<p>No upsets recorded yet.</p>';
   }
+
   function rivalryTable(){
     const rows = calcStandings();
     if(rows.length < 2) return '<p>Need two regions.</p>';
