@@ -674,3 +674,21 @@ main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51
 /* Group standings full columns */
 .simple-group-table{min-width:880px;}
 .group-form-icons{justify-content:center;}
+
+/* Clean Super Admin update */
+.admin-box{max-height:88vh;overflow:auto}
+.admin-health-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0 16px}
+.admin-health-card{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:4px}
+.admin-health-card span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+.admin-health-card strong{font-size:16px;color:var(--text)}
+.admin-section{border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0;background:rgba(255,255,255,.03)}
+.admin-section h3{margin:0 0 6px;color:var(--gold)}
+.admin-list{display:grid;gap:8px;margin-top:10px}
+.clean-admin-row{grid-template-columns:56px minmax(220px,1fr) 72px 72px minmax(150px,210px) auto auto;border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(7,23,37,.6)}
+.clean-admin-row input,.clean-admin-row select{padding:9px;border-radius:10px}
+.lock-only-row{grid-template-columns:56px minmax(220px,1fr) auto}
+.admin-warning{grid-column:1/-1;color:var(--red);font-weight:900}
+.admin-completed-line{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(7,23,37,.45)}
+.clean-admin-actions{justify-content:flex-start}
+.audit-box{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
+@media (max-width:900px){.clean-admin-row,.lock-only-row{grid-template-columns:1fr 1fr}.clean-admin-row>div:first-child,.clean-admin-row .game-title,.admin-warning,.lock-only-row>div:first-child,.lock-only-row .game-title{grid-column:1/-1}.clean-admin-row select{grid-column:1/-1}.admin-completed-line{display:grid}}

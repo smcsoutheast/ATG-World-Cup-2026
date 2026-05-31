@@ -30,7 +30,7 @@
   let applyingRemote = false;
   let countdownTimer = null;
 
-  function defaultState(){ return { picks:{}, pickMeta:{}, scores:{}, teams:{}, lockOverrides:{}, audit:[], scoreHistory:[], previousRanks:null, backups:{}, updatedAt:null }; }
+  function defaultState(){ return { picks:{}, pickMeta:{}, scores:{}, advancers:{}, teams:{}, lockOverrides:{}, audit:[], scoreHistory:[], previousRanks:null, backups:{}, updatedAt:null }; }
 
   function loadState(){
     try { return Object.assign(defaultState(), JSON.parse(localStorage.getItem(KEY) || '{}')); }
@@ -70,6 +70,7 @@
         state.picks = data.picks || {};
         state.pickMeta = data.pickMeta || {};
         state.scores = data.scores || {};
+        state.advancers = data.advancers || {};
         state.teams = data.teams || {};
         state.lockOverrides = data.lockOverrides || {};
         state.audit = data.audit || [];
@@ -107,6 +108,7 @@
       picks: state.picks || {},
       pickMeta: state.pickMeta || {},
       scores: state.scores || {},
+      advancers: state.advancers || {},
       teams: state.teams || {},
       lockOverrides: state.lockOverrides || {},
       audit: (state.audit || []).slice(-120),
@@ -245,6 +247,10 @@
     const h = Number(m.homeScore), a = Number(m.awayScore);
     if(h > a) return 'HOME';
     if(a > h) return 'AWAY';
+    if(isKnockout(m.stage)){
+      const advancer = state.advancers?.[m.id];
+      if(advancer === 'HOME' || advancer === 'AWAY') return advancer;
+    }
     return 'DRAW';
   }
   function pickLabel(m,pick){
@@ -625,11 +631,46 @@
   }
   function renderAdmin(){
     if(!adminUnlocked){ $('adminTools').innerHTML = ''; $('adminScores').innerHTML = ''; return; }
-    $('adminTools').innerHTML = `<div class="admin-actions"><button id="resetLocal" type="button" class="ghost small">Reset local data</button><button id="undoScore" type="button" class="ghost small">Undo last score</button><span class="meta">Knockout teams update automatically from group standings and knockout results.</span></div>`;
-    $('adminScores').innerHTML = matches().map(m => {
-      return `<div class="admin-row"><div>#${esc(m.id)}</div><div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)}</span></div><input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home"><input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away"><button data-save-score="${esc(m.id)}" type="button">Score</button><button data-toggle-lock="${esc(m.id)}" type="button" class="ghost small">${lockOverrideLabel(m.id)}</button></div>`;
-    }).join('');
-    $('adminScores').insertAdjacentHTML('beforeend', `<div class="audit-box"><h3>Audit Log</h3>${auditHtml()}</div>`);
+    const all = matches().sort((a,b) => Number(a.id) - Number(b.id));
+    const now = Date.now();
+    const todayKey = new Date().toISOString().slice(0,10);
+    const needingScores = all.filter(m => !hasScore(m) && (m.date === todayKey || kickoffDate(m).getTime() <= now || isPickLocked(m))).slice(0,16);
+    const scoreRows = (needingScores.length ? needingScores : all.slice(0,16)).map(adminScoreRow).join('');
+    const lockedRows = all.filter(m => isPickLocked(m) && !hasScore(m)).slice(0,10).map(adminLockRow).join('') || '<p class="meta">No locked matches need scores.</p>';
+    const completedRows = all.filter(hasScore).slice(-12).reverse().map(adminCompletedRow).join('') || '<p class="meta">No completed matches yet.</p>';
+    const lastSync = state.updatedAt ? prettyTimestamp(state.updatedAt) : 'Not synced yet';
+    const firebaseText = firebaseReady ? 'Firebase connected' : 'Local mode';
+    $('adminTools').innerHTML = `
+      <div class="admin-health-grid">
+        <div class="admin-health-card"><span>Status</span><strong>${esc(firebaseText)}</strong></div>
+        <div class="admin-health-card"><span>Last Sync</span><strong>${esc(lastSync)}</strong></div>
+        <div class="admin-health-card"><span>Signed In</span><strong>Super Admin</strong></div>
+      </div>
+      <div class="admin-section">
+        <h3>Scores</h3>
+        <p class="meta">Enter scores, clear results, and pick an advancing team if a knockout match is tied.</p>
+        <div class="admin-list">${scoreRows}</div>
+      </div>
+      <div class="admin-section">
+        <h3>Locks</h3>
+        <p class="meta">Use overrides only for mistakes or emergency changes.</p>
+        <div class="admin-list">${lockedRows}</div>
+      </div>
+      <div class="admin-section">
+        <h3>Completed Matches</h3>
+        <div class="admin-list">${completedRows}</div>
+      </div>
+      <div class="admin-section">
+        <h3>Maintenance</h3>
+        <div class="admin-actions clean-admin-actions">
+          <button id="recalcAll" type="button" class="ghost small">Recalculate all</button>
+          <button id="reloadFirebase" type="button" class="ghost small">Reload from Firebase</button>
+          <button id="undoScore" type="button" class="ghost small">Undo last score</button>
+          <button id="resetLocal" type="button" class="ghost small">Reset local data</button>
+        </div>
+      </div>`;
+    $('adminScores').innerHTML = `<div class="audit-box"><h3>Audit Log</h3>${auditHtml()}</div>`;
+
     const resetBtn = $('resetLocal');
     if(resetBtn){
       resetBtn.addEventListener('click', () => {
@@ -639,24 +680,128 @@
     }
     const undoBtn = $('undoScore');
     if(undoBtn) undoBtn.addEventListener('click', undoLastScore);
+    const recalcBtn = $('recalcAll');
+    if(recalcBtn) recalcBtn.addEventListener('click', () => {
+      addAudit('Super Admin recalculated standings, groups, and bracket');
+      saveState(); renderAll(); renderAdmin();
+      $('adminStatus').textContent = 'Recalculated all competition data.';
+    });
+    const reloadBtn = $('reloadFirebase');
+    if(reloadBtn) reloadBtn.addEventListener('click', reloadFromFirebase);
     document.querySelectorAll('[data-save-score]').forEach(b => b.addEventListener('click', () => saveScore(b.dataset.saveScore)));
+    document.querySelectorAll('[data-clear-score]').forEach(b => b.addEventListener('click', () => clearScore(b.dataset.clearScore)));
     document.querySelectorAll('[data-toggle-lock]').forEach(b => b.addEventListener('click', () => toggleLock(b.dataset.toggleLock)));
+  }
+
+  function adminScoreRow(m){
+    const tied = isKnockout(m.stage) && hasScore(m) && Number(m.homeScore) === Number(m.awayScore);
+    const adv = state.advancers?.[m.id] || '';
+    return `<div class="admin-row clean-admin-row">
+      <div>#${esc(m.id)}</div>
+      <div class="game-title">${flagFor(m.homeTeam)} ${esc(m.homeTeam)} vs ${flagFor(m.awayTeam)} ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)} · ${lockStatusText(m)}</span></div>
+      <input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home">
+      <input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away">
+      <select data-advancer="${esc(m.id)}" class="admin-advancer ${isKnockout(m.stage) ? '' : 'hidden'}">
+        <option value="">Advancer if tied</option>
+        <option value="HOME" ${adv === 'HOME' ? 'selected' : ''}>${esc(m.homeTeam)} advances</option>
+        <option value="AWAY" ${adv === 'AWAY' ? 'selected' : ''}>${esc(m.awayTeam)} advances</option>
+      </select>
+      <button data-save-score="${esc(m.id)}" type="button">Save</button>
+      <button data-clear-score="${esc(m.id)}" type="button" class="ghost small">Clear</button>
+      ${tied && !adv ? '<small class="admin-warning">Needs winner</small>' : ''}
+    </div>`;
+  }
+
+  function adminLockRow(m){
+    return `<div class="admin-row clean-admin-row lock-only-row">
+      <div>#${esc(m.id)}</div>
+      <div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)} · ${lockStatusText(m)}</span></div>
+      <button data-toggle-lock="${esc(m.id)}" type="button" class="ghost small">${lockOverrideLabel(m.id)}</button>
+    </div>`;
+  }
+
+  function adminCompletedRow(m){
+    const score = `${scoreText(m.homeScore)}-${scoreText(m.awayScore)}`;
+    const adv = state.advancers?.[m.id] ? ` · ${pickLabel(m, state.advancers[m.id])} advances` : '';
+    return `<div class="admin-completed-line"><strong>Match ${esc(m.id)}</strong><span>${esc(m.homeTeam)} ${esc(score)} ${esc(m.awayTeam)}${esc(adv)}</span></div>`;
+  }
+
+  function lockStatusText(m){
+    const override = state.lockOverrides?.[m.id];
+    if(override === 'locked') return 'Locked by admin';
+    if(override === 'unlocked') return 'Unlocked by admin';
+    return isPickLocked(m) ? 'Locked' : 'Open';
   }
 
   function saveScore(id){
     const h = document.querySelector(`[data-home="${CSS.escape(id)}"]`).value;
     const a = document.querySelector(`[data-away="${CSS.escape(id)}"]`).value;
+    const advSel = document.querySelector(`[data-advancer="${CSS.escape(id)}"]`);
+    const advancer = advSel ? advSel.value : '';
+    const m = matches().find(match => String(match.id) === String(id));
+    if(!m){ $('adminStatus').textContent = 'Match not found.'; return; }
+    if(h === '' || a === ''){ $('adminStatus').textContent = 'Enter both scores before saving.'; return; }
+    if(Number(h) < 0 || Number(a) < 0){ $('adminStatus').textContent = 'Scores cannot be negative.'; return; }
+    if(isKnockout(m.stage) && Number(h) === Number(a) && advancer !== 'HOME' && advancer !== 'AWAY'){
+      $('adminStatus').textContent = 'Knockout match is tied. Choose which team advances.';
+      return;
+    }
     state.previousRanks = rankSnapshot();
     const prior = state.scores[id] ? Object.assign({}, state.scores[id]) : null;
+    const priorAdvancer = state.advancers?.[id] || null;
     state.scoreHistory = state.scoreHistory || [];
-    state.scoreHistory.push({ id, prior, at:new Date().toISOString() });
+    state.scoreHistory.push({ id, prior, priorAdvancer, at:new Date().toISOString() });
     state.scoreHistory = state.scoreHistory.slice(-25);
-    state.scores[id] = { homeScore: h === '' ? null : Number(h), awayScore: a === '' ? null : Number(a) };
-    addAudit(`Super Admin updated Match ${id} score to ${h || 0}-${a || 0}`);
+    state.scores[id] = { homeScore: Number(h), awayScore: Number(a) };
+    state.advancers = state.advancers || {};
+    if(isKnockout(m.stage) && Number(h) === Number(a)) state.advancers[id] = advancer;
+    else delete state.advancers[id];
+    addAudit(`Super Admin updated Match ${id} score to ${h}-${a}${state.advancers[id] ? `, ${pickLabel(m, state.advancers[id])} advances` : ''}`);
     saveState();
     renderAll();
     renderAdmin();
   }
+
+  function clearScore(id){
+    const prior = state.scores[id] ? Object.assign({}, state.scores[id]) : null;
+    const priorAdvancer = state.advancers?.[id] || null;
+    if(!prior && !priorAdvancer){ $('adminStatus').textContent = 'No score to clear.'; return; }
+    state.previousRanks = rankSnapshot();
+    state.scoreHistory = state.scoreHistory || [];
+    state.scoreHistory.push({ id, prior, priorAdvancer, at:new Date().toISOString() });
+    delete state.scores[id];
+    if(state.advancers) delete state.advancers[id];
+    addAudit(`Super Admin cleared Match ${id} result`);
+    saveState(); renderAll(); renderAdmin();
+  }
+
+  function reloadFromFirebase(){
+    if(!firebaseReady || !docRef){ $('adminStatus').textContent = 'Firebase is not connected.'; return; }
+    docRef.get().then(snapshot => {
+      if(!snapshot.exists){ $('adminStatus').textContent = 'No Firebase data found.'; return; }
+      const data = snapshot.data() || {};
+      applyingRemote = true;
+      state.picks = data.picks || {};
+      state.pickMeta = data.pickMeta || {};
+      state.scores = data.scores || {};
+      state.advancers = data.advancers || {};
+      state.teams = data.teams || {};
+      state.lockOverrides = data.lockOverrides || {};
+      state.audit = data.audit || [];
+      state.scoreHistory = data.scoreHistory || [];
+      state.previousRanks = data.previousRanks || null;
+      state.backups = data.backups || {};
+      state.updatedAt = data.updatedAt || null;
+      saveLocal();
+      applyingRemote = false;
+      renderAll(); renderAdmin();
+      $('adminStatus').textContent = 'Reloaded from Firebase.';
+    }).catch(err => {
+      $('adminStatus').textContent = 'Firebase reload failed.';
+      console.error('Firebase reload error:', err);
+    });
+  }
+
   function kickoffDate(m){
     const time = normalizeTime(m.timeET || '00:00');
     return new Date(`${m.date}T${time}:00-04:00`);
@@ -825,6 +970,9 @@
     if(!last){ $('adminStatus').textContent = 'No score change to undo.'; return; }
     if(last.prior) state.scores[last.id] = last.prior;
     else delete state.scores[last.id];
+    state.advancers = state.advancers || {};
+    if(last.priorAdvancer) state.advancers[last.id] = last.priorAdvancer;
+    else delete state.advancers[last.id];
     addAudit(`Super Admin undid score update for Match ${last.id}`);
     saveState(); renderAll(); renderAdmin();
   }
