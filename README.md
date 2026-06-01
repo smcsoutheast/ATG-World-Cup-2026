@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260601-flag-fit-fix`
+Build: `20260601-texas-west`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -228,7 +228,7 @@ The Insights tab includes:
 | Steve & Josh | Steve, Josh | SJ2026 |
 | Southeast | Justin, Ashley | SE2026 |
 | Interns | Drake, Tucker, Vince | IN2026 |
-| Texas | Zarin, Gabriella | TX2026 |
+| Texas/West | Zarin, Gabriella, Michelle | TX2026 |
 | Midwest | Sean, Andrew, Sam | MW2026 |
 | Mid-Atlantic | John, Skyler | MA2026 |
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260601-flag-fit-fix`.
+6. Confirm the footer shows `Build 20260601-texas-west`.
 
 Hard refresh tips:
 
