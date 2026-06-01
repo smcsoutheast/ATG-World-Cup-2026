@@ -900,3 +900,31 @@ footer{
   background:#fff;
 }
 .bracket-team .flag-img,.game-title .flag-img,.group-table .flag-img,.mini-table .flag-img{width:28px;height:19px;border-radius:3px;vertical-align:middle;margin-right:6px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+
+.flag-code{
+  display:inline-grid;
+  place-items:center;
+  background:#f4c95d;
+  color:#081929;
+  border:1px solid rgba(255,255,255,.38);
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.04em;
+  line-height:1;
+  text-align:center;
+}
+.simple-team .flag-code{
+  width:54px;
+  height:36px;
+  font-size:12px;
+  border-radius:6px;
+  margin:0;
+}
+.bracket-team .flag-code,.game-title .flag-code,.group-table .flag-code,.mini-table .flag-code{
+  width:28px;
+  height:19px;
+  border-radius:3px;
+  vertical-align:middle;
+  margin-right:6px;
+  font-size:8px;
+}

@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260531-png-flags`
+Build: `20260531-correct-national-flags`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260531-png-flags`.
+6. Confirm the footer shows `Build 20260531-correct-national-flags`.
 
 Hard refresh tips:
 
@@ -482,3 +482,11 @@ The most important files are:
 - `index.html` for page structure and Firebase script loading
 
 If the app breaks after a change, restore the last working ZIP and reapply only the needed update.
+
+## Flag Assets Update
+
+National flags are stored as local PNG files in `assets/flags/`.
+
+These PNG files were converted from the uploaded `svg.zip` source and mapped by each country in `app.js`.
+
+If a flag image fails to load, the app shows the country's three-letter FIFA code as the fallback.

@@ -17,6 +17,10 @@
     'Algeria':'DZ','Argentina':'AR','Australia':'AU','Austria':'AT','Belgium':'BE','Bosnia and Herzegovina':'BA','Brazil':'BR','Cabo Verde':'CV','Canada':'CA','Colombia':'CO','Congo DR':'CD','Croatia':'HR','Curaçao':'CW','Czechia':'CZ','Côte d’Ivoire':'CI','Ecuador':'EC','Egypt':'EG','England':'GB-ENG','France':'FR','Germany':'DE','Ghana':'GH','Haiti':'HT','Iran':'IR','Iraq':'IQ','Japan':'JP','Jordan':'JO','Korea Republic':'KR','Mexico':'MX','Morocco':'MA','Netherlands':'NL','New Zealand':'NZ','Norway':'NO','Panama':'PA','Paraguay':'PY','Portugal':'PT','Qatar':'QA','Saudi Arabia':'SA','Scotland':'GB-SCT','Senegal':'SN','South Africa':'ZA','Spain':'ES','Sweden':'SE','Switzerland':'CH','Tunisia':'TN','Türkiye':'TR','United States':'US','Uruguay':'UY','Uzbekistan':'UZ'
   };
 
+  const FIFA_CODES = {
+    'Algeria':'ALG','Argentina':'ARG','Australia':'AUS','Austria':'AUT','Belgium':'BEL','Bosnia and Herzegovina':'BIH','Brazil':'BRA','Cabo Verde':'CPV','Canada':'CAN','Colombia':'COL','Congo DR':'COD','Croatia':'CRO','Curaçao':'CUW','Czechia':'CZE','Côte d’Ivoire':'CIV','Ecuador':'ECU','Egypt':'EGY','England':'ENG','France':'FRA','Germany':'GER','Ghana':'GHA','Haiti':'HAI','Iran':'IRN','Iraq':'IRQ','Japan':'JPN','Jordan':'JOR','Korea Republic':'KOR','Mexico':'MEX','Morocco':'MAR','Netherlands':'NED','New Zealand':'NZL','Norway':'NOR','Panama':'PAN','Paraguay':'PAR','Portugal':'POR','Qatar':'QAT','Saudi Arabia':'KSA','Scotland':'SCO','Senegal':'SEN','South Africa':'RSA','Spain':'ESP','Sweden':'SWE','Switzerland':'SUI','Tunisia':'TUN','Türkiye':'TUR','United States':'USA','Uruguay':'URU','Uzbekistan':'UZB'
+  };
+
   const $ = id => document.getElementById(id);
   const state = loadState();
   let activeRegion = null;
@@ -1449,10 +1453,16 @@
     return `assets/flags/${String(code).toLowerCase().replace(/[^a-z0-9]+/g,'-')}.png`;
   }
 
+  function flagFallback(team){
+    const code = FIFA_CODES[team];
+    return code ? `<span class="flag-small flag-code" title="${esc(team)}">${esc(code)}</span>` : '<span class="flag-small flag-empty" aria-hidden="true"></span>';
+  }
+
   function flagFor(team){
-    const code = COUNTRY_CODES[team];
-    if(!code) return '<span class="flag-small flag-empty" aria-hidden="true"></span>';
-    return `<img class="flag-small flag-img" src="${flagAssetPath(code)}" alt="${esc(team)} flag" loading="lazy" onerror="this.replaceWith(document.createElement('span'))">`;
+    const assetCode = COUNTRY_CODES[team];
+    const fifaCode = FIFA_CODES[team] || '';
+    if(!assetCode) return flagFallback(team);
+    return `<img class="flag-small flag-img" src="${flagAssetPath(assetCode)}" alt="${esc(team)} flag" loading="lazy" data-fallback="${esc(fifaCode)}" onerror="var s=document.createElement('span');s.className='flag-small flag-code';s.textContent=this.dataset.fallback||'';this.replaceWith(s);">`;
   }
 
   function prettyDate(d){

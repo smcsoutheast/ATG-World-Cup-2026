@@ -1,0 +1,1 @@
+Country flag PNG files converted from the uploaded svg.zip file. Filenames match the ISO asset codes used by app.js. If an image cannot load, the app displays the country FIFA three-letter code as text fallback.
