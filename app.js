@@ -1,3 +1,47 @@
+
+  function getDeviceTimeZone(){
+    try{
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
+    }catch(e){
+      return 'America/New_York';
+    }
+  }
+
+  function timeZoneShort(date, timeZone){
+    try{
+      const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName:'short' }).formatToParts(date);
+      return (parts.find(p => p.type === 'timeZoneName') || {}).value || '';
+    }catch(e){
+      return '';
+    }
+  }
+
+  function formatClockTime(date, timeZone){
+    try{
+      return new Intl.DateTimeFormat('en-US', { timeZone, hour:'numeric', minute:'2-digit', hour12:true }).format(date).replace(/\s/g, ' ');
+    }catch(e){
+      return '';
+    }
+  }
+
+  function sameTimeZone(a, b){
+    return String(a || '').toLowerCase() === String(b || '').toLowerCase();
+  }
+
+  function formatDeviceMatchTime(match){
+    const date = matchDateTime(match);
+    if(!date) return esc(match.time || match.timeET || '');
+    const deviceZone = getDeviceTimeZone();
+    const localTime = formatClockTime(date, deviceZone);
+    const localZone = timeZoneShort(date, deviceZone);
+    const easternZone = 'America/New_York';
+    const easternTime = formatClockTime(date, easternZone);
+    const easternShort = timeZoneShort(date, easternZone) || 'ET';
+    const primary = `${localTime}${localZone ? ` ${localZone}` : ''}`;
+    if(sameTimeZone(deviceZone, easternZone)) return primary;
+    return `${primary} <small>Original: ${easternTime} ${easternShort}</small>`;
+  }
+
 (function(){
   const REGION_COLORS = {
     "Steve & Josh": "#2563eb",

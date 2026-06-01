@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260601-region-colors`
+Build: `20260601-local-time`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260601-region-colors`.
+6. Confirm the footer shows `Build 20260601-local-time`.
 
 Hard refresh tips:
 
@@ -503,3 +503,10 @@ Current region colors:
 - Midwest: Purple
 - Mid-Atlantic: Cyan
 - Interns: Pink
+
+
+## Device local time
+
+Match times are stored from the schedule in Eastern time. The public display converts each kickoff to the viewer's device time zone and uses h:mm AM/PM formatting.
+
+If the viewer is outside the Eastern time zone, the match card also shows the original Eastern kickoff time for reference.
