@@ -928,3 +928,28 @@ footer{
   margin-right:6px;
   font-size:8px;
 }
+
+
+/* Region colors, no region uses gold */
+.region-color-steve-josh{--region-color:#2563eb;}
+.region-color-southeast{--region-color:#16a34a;}
+.region-color-texas-west{--region-color:#dc2626;}
+.region-color-midwest{--region-color:#7c3aed;}
+.region-color-mid-atlantic{--region-color:#0891b2;}
+.region-color-interns{--region-color:#db2777;}
+
+.region-chip,
+.pick-chip,
+.region-profile,
+.spotlight-card{
+  border-left-color:var(--region-color, var(--line));
+}
+
+.region-dot{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  display:inline-block;
+  background:var(--region-color, #94a3b8);
+  margin-right:6px;
+}

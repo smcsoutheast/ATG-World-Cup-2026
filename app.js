@@ -1,4 +1,13 @@
 (function(){
+  const REGION_COLORS = {
+    "Steve & Josh": "#2563eb",
+    "Southeast": "#16a34a",
+    "Texas/West": "#dc2626",
+    "Midwest": "#7c3aed",
+    "Mid-Atlantic": "#0891b2",
+    "Interns": "#db2777"
+  };
+
   const REGIONS = [
     { id:'SteveJosh', name:'Steve & Josh', code:'SJ2026', members:'Steve, Josh' },
     { id:'Southeast', name:'Southeast', code:'SE2026', members:'Justin, Ashley' },

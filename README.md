@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260601-texas-west`
+Build: `20260601-region-colors`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260601-texas-west`.
+6. Confirm the footer shows `Build 20260601-region-colors`.
 
 Hard refresh tips:
 
@@ -490,3 +490,16 @@ National flags are stored as local PNG files in `assets/flags/`.
 These PNG files were converted from the uploaded `svg.zip` source and mapped by each country in `app.js`.
 
 If a flag image fails to load, the app shows the country's three-letter FIFA code as the fallback.
+
+
+## Region colors
+
+No region uses gold. Gold is reserved for tournament branding, active tabs, awards, and major highlights.
+
+Current region colors:
+- Steve & Josh: Blue
+- Southeast: Green
+- Texas/West: Red
+- Midwest: Purple
+- Mid-Atlantic: Cyan
+- Interns: Pink
