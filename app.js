@@ -1,62 +1,19 @@
 
-  function getDeviceTimeZone(){
-    try{
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
-    }catch(e){
-      return 'America/New_York';
-    }
-  }
-
-  function timeZoneShort(date, timeZone){
-    try{
-      const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName:'short' }).formatToParts(date);
-      return (parts.find(p => p.type === 'timeZoneName') || {}).value || '';
-    }catch(e){
-      return '';
-    }
-  }
-
-  function formatClockTime(date, timeZone){
-    try{
-      return new Intl.DateTimeFormat('en-US', { timeZone, hour:'numeric', minute:'2-digit', hour12:true }).format(date).replace(/\s/g, ' ');
-    }catch(e){
-      return '';
-    }
-  }
-
-  function sameTimeZone(a, b){
-    return String(a || '').toLowerCase() === String(b || '').toLowerCase();
-  }
-
-  function formatDeviceMatchTime(match){
-    const date = matchDateTime(match);
-    if(!date) return esc(match.time || match.timeET || '');
-    const deviceZone = getDeviceTimeZone();
-    const localTime = formatClockTime(date, deviceZone);
-    const localZone = timeZoneShort(date, deviceZone);
-    const easternZone = 'America/New_York';
-    const easternTime = formatClockTime(date, easternZone);
-    const easternShort = timeZoneShort(date, easternZone) || 'ET';
-    const primary = `${localTime}${localZone ? ` ${localZone}` : ''}`;
-    if(sameTimeZone(deviceZone, easternZone)) return primary;
-    return `${primary} <small>Original: ${easternTime} ${easternShort}</small>`;
-  }
-
 (function(){
   const REGION_COLORS = {
-    "Steve & Josh": "#2563eb",
-    "Southeast": "#16a34a",
-    "Texas/West": "#dc2626",
-    "Midwest": "#7c3aed",
-    "Mid-Atlantic": "#0891b2",
-    "Interns": "#db2777"
+    SteveJosh: '#2563eb',
+    Southeast: '#16a34a',
+    TexasWest: '#dc2626',
+    Midwest: '#7c3aed',
+    MidAtlantic: '#0891b2',
+    Interns: '#db2777'
   };
 
   const REGIONS = [
     { id:'SteveJosh', name:'Steve & Josh', code:'SJ2026', members:'Steve, Josh' },
     { id:'Southeast', name:'Southeast', code:'SE2026', members:'Justin, Ashley' },
     { id:'Interns', name:'Interns', code:'IN2026', members:'Drake, Tucker, Vince' },
-    { id:'Texas/West', name:'Texas/West', code:'TX2026', members:'Zarin, Gabriella, Michelle' },
+    { id:'TexasWest', name:'Texas/West', code:'TX2026', members:'Zarin, Gabriella, Michelle' },
     { id:'Midwest', name:'Midwest', code:'MW2026', members:'Sean, Andrew, Sam' },
     { id:'MidAtlantic', name:'Mid-Atlantic', code:'MA2026', members:'John, Skyler' }
   ];
@@ -91,8 +48,23 @@
 
   function defaultState(){ return { picks:{}, pickMeta:{}, scores:{}, advancers:{}, teams:{}, lockOverrides:{}, audit:[], scoreHistory:[], previousRanks:null, backups:{}, updatedAt:null }; }
 
+  function migrateRegionKeys(data){
+    const aliases = ['Texas', 'Texas/West'];
+    ['picks','pickMeta'].forEach(bucket => {
+      data[bucket] = data[bucket] || {};
+      aliases.forEach(oldKey => {
+        if(data[bucket][oldKey]){
+          data[bucket].TexasWest = Object.assign({}, data[bucket][oldKey], data[bucket].TexasWest || {});
+          delete data[bucket][oldKey];
+        }
+      });
+    });
+    return data;
+  }
+
+
   function loadState(){
-    try { return Object.assign(defaultState(), JSON.parse(localStorage.getItem(KEY) || '{}')); }
+    try { return migrateRegionKeys(Object.assign(defaultState(), JSON.parse(localStorage.getItem(KEY) || '{}'))); }
     catch(e) { return defaultState(); }
   }
 
@@ -124,7 +96,7 @@
           saveRemote();
           return;
         }
-        const data = snapshot.data() || {};
+        const data = migrateRegionKeys(snapshot.data() || {});
         applyingRemote = true;
         state.picks = data.picks || {};
         state.pickMeta = data.pickMeta || {};
@@ -381,7 +353,7 @@
     tbody.innerHTML = rows.map((r,i) => {
       const move = prev[r.id] ? prev[r.id] - (i+1) : 0;
       const moveText = move > 0 ? `▲ +${move}` : move < 0 ? `▼ ${move}` : '▬';
-      return `<tr class="region-row region-${r.id}"><td class="hide-sm move-cell">${moveText}</td><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td class="hide-sm">${formIcons(r.form)}</td><td>${r.accuracy}%</td></tr>`;
+      return `<tr class="region-row region-${r.id}" style="--region-color:${REGION_COLORS[r.id] || '#64748b'}"><td class="hide-sm move-cell">${moveText}</td><td>${i+1}. ${esc(r.region)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="hide-sm">${r.gf}</td><td class="hide-sm">${r.ga}</td><td>${r.gd}</td><td>${r.pts}</td><td class="hide-sm">${formIcons(r.form)}</td><td>${r.accuracy}%</td></tr>`;
     }).join('');
     renderAwardCards(rows);
   }
@@ -424,7 +396,7 @@
   function awardCard(title, leader, detail, iconType, multi){
     const extraClass = multi ? ' multi-award' : '';
     if(!leader) return `<div class="award-card${extraClass}"><div class="award-icon">${awardIcon(iconType)}</div><h3>${esc(title)}</h3><p>No results yet</p></div>`;
-    return `<div class="award-card region-${leader.id}${extraClass}"><div class="award-icon">${awardIcon(iconType)}</div><h3>${esc(title)}</h3><strong>${esc(leader.region)}</strong><p>${detail(leader)}</p></div>`;
+    return `<div class="award-card region-${leader.id}${extraClass}" style="--region-color:${REGION_COLORS[leader.id] || '#64748b'}"><div class="award-icon">${awardIcon(iconType)}</div><h3>${esc(title)}</h3><strong>${esc(leader.region)}</strong><p>${detail(leader)}</p></div>`;
   }
 
   function renderAwardCards(rows){
@@ -677,7 +649,7 @@
       ${scoreHtml}
       <div class="simple-details">
         <span>${prettyLongDate(m.date)}</span>
-        <span>${esc(m.timeET)} ET</span>
+        <span>${formatDeviceMatchTime(m)}</span>
         <span>${esc(m.venue)}${m.city ? ` · ${esc(m.city)}` : ''}</span>
       </div>
       ${lockNoticeHtml(m)}
@@ -917,6 +889,40 @@
     const h = String(parts[0] || '0').padStart(2,'0');
     const min = String(parts[1] || '0').padStart(2,'0');
     return `${h}:${min}`;
+  }
+
+
+
+  function getDeviceTimeZone(){
+    try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York'; }
+    catch(e){ return 'America/New_York'; }
+  }
+
+  function timeZoneShort(date, timeZone){
+    try{
+      const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName:'short' }).formatToParts(date);
+      return (parts.find(p => p.type === 'timeZoneName') || {}).value || '';
+    }catch(e){ return ''; }
+  }
+
+  function formatClockTime(date, timeZone){
+    try{
+      return new Intl.DateTimeFormat('en-US', { timeZone, hour:'numeric', minute:'2-digit', hour12:true }).format(date).replace(/\s/g, ' ');
+    }catch(e){ return ''; }
+  }
+
+  function formatDeviceMatchTime(m){
+    const date = kickoffDate(m);
+    if(!date || isNaN(date.getTime())) return esc(m.timeET || m.time || '');
+    const deviceZone = getDeviceTimeZone();
+    const easternZone = 'America/New_York';
+    const localTime = formatClockTime(date, deviceZone);
+    const localZone = timeZoneShort(date, deviceZone);
+    const easternTime = formatClockTime(date, easternZone);
+    const easternShort = timeZoneShort(date, easternZone) || 'ET';
+    const primary = `${localTime}${localZone ? ` ${localZone}` : ''}`;
+    if(String(deviceZone).toLowerCase() === easternZone.toLowerCase()) return primary;
+    return `${primary}<small>Original: ${easternTime} ${easternShort}</small>`;
   }
 
   function lockDate(m){
@@ -1364,7 +1370,7 @@
   function regionSpotlightPanel(row){
     const tabs = REGIONS.map(r => `<button type="button" class="spotlight-tab ${r.id === row.id ? 'active' : ''}" data-insight-region="${esc(r.id)}">${esc(r.name)}</button>`).join('');
     return `<div class="spotlight-tabs">${tabs}</div>
-      <div class="spotlight-card region-${row.id}">
+      <div class="spotlight-card region-${row.id}" style="--region-color:${REGION_COLORS[row.id] || '#64748b'}">
         <strong>${esc(row.region)}</strong>
         <p>${esc(row.members)}</p>
         <div class="spotlight-stats">

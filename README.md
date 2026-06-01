@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260601-local-time`
+Build: `20260601-region-time-fix`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260601-local-time`.
+6. Confirm the footer shows `Build 20260601-region-time-fix`.
 
 Hard refresh tips:
 
@@ -510,3 +510,11 @@ Current region colors:
 Match times are stored from the schedule in Eastern time. The public display converts each kickoff to the viewer's device time zone and uses h:mm AM/PM formatting.
 
 If the viewer is outside the Eastern time zone, the match card also shows the original Eastern kickoff time for reference.
+
+
+## Final region and time fixes
+
+- Texas/West includes Zarin, Gabriella, and Michelle.
+- Region color IDs use stable code keys, so Texas/West styling works on GitHub Pages and Firebase.
+- No region uses gold. Gold is reserved for branding, awards, active states, and highlights.
+- Match cards display kickoff times in the viewer's device time zone using h:mm AM/PM. When the viewer is outside Eastern time, the original Eastern time also displays.
