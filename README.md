@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260601-region-time-fix`
+Build: `20260602-auto-scores`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260601-region-time-fix`.
+6. Confirm the footer shows `Build 20260602-auto-scores`.
 
 Hard refresh tips:
 
@@ -518,3 +518,95 @@ If the viewer is outside the Eastern time zone, the match card also shows the or
 - Region color IDs use stable code keys, so Texas/West styling works on GitHub Pages and Firebase.
 - No region uses gold. Gold is reserved for branding, awards, active states, and highlights.
 - Match cards display kickoff times in the viewer's device time zone using h:mm AM/PM. When the viewer is outside Eastern time, the original Eastern time also displays.
+
+
+## Automatic score updates
+
+This build supports a three-phase score workflow.
+
+### Phase 1, Manual scoring remains primary
+
+Super Admin can still enter scores manually. This is the safest source of truth.
+
+### Phase 2, Score suggestions
+
+Super Admin can check a score feed from the Super Admin panel.
+
+Default feed path:
+
+```text
+score-feed.json
+```
+
+The feed can also point to an approved API endpoint or your own hosted JSON file.
+
+Expected JSON shape:
+
+```json
+{
+  "scores": [
+    {
+      "matchId": "1",
+      "homeScore": 2,
+      "awayScore": 1,
+      "status": "final",
+      "source": "Approved score source"
+    }
+  ]
+}
+```
+
+Knockout penalty shootout example:
+
+```json
+{
+  "scores": [
+    {
+      "matchId": "75",
+      "homeScore": 1,
+      "awayScore": 1,
+      "homePens": 4,
+      "awayPens": 3,
+      "status": "final",
+      "source": "Approved score source"
+    }
+  ]
+}
+```
+
+### Phase 3, One-click approval
+
+Score suggestions do not update standings automatically. Super Admin must approve each suggestion.
+
+After approval:
+
+- ATG standings update.
+- World Cup group standings update.
+- Wildcard third-place cards update.
+- Knockout bracket advances.
+- Firebase sync saves the approved result.
+- Audit log records the change.
+
+### Penalty shootout scoring rule
+
+Penalty shootout goals are used only to determine the advancing team.
+
+They do not count toward:
+
+- Goals For
+- Goals Against
+- Goal Difference
+
+Example:
+
+```text
+France 2
+England 2
+France wins 4-3 on penalties
+```
+
+ATG scoring:
+
+- France pick is correct.
+- France receives 2 GF and 2 GA.
+- Penalty kicks do not add to GF or GA.

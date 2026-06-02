@@ -46,7 +46,7 @@
   let applyingRemote = false;
   let countdownTimer = null;
 
-  function defaultState(){ return { picks:{}, pickMeta:{}, scores:{}, advancers:{}, teams:{}, lockOverrides:{}, audit:[], scoreHistory:[], previousRanks:null, backups:{}, updatedAt:null }; }
+  function defaultState(){ return { picks:{}, pickMeta:{}, scores:{}, advancers:{}, teams:{}, lockOverrides:{}, audit:[], scoreHistory:[], previousRanks:null, backups:{}, scoreSuggestions:{}, autoScoreSettings:{ sourceUrl:'score-feed.json', lastCheck:null, lastError:null }, updatedAt:null }; }
 
   function migrateRegionKeys(data){
     const aliases = ['Texas', 'Texas/West'];
@@ -108,6 +108,8 @@
         state.scoreHistory = data.scoreHistory || [];
         state.previousRanks = data.previousRanks || null;
         state.backups = data.backups || {};
+        state.scoreSuggestions = data.scoreSuggestions || {};
+        state.autoScoreSettings = Object.assign(defaultState().autoScoreSettings, data.autoScoreSettings || {});
         state.updatedAt = data.updatedAt || null;
         saveLocal();
         applyingRemote = false;
@@ -146,6 +148,8 @@
       scoreHistory: (state.scoreHistory || []).slice(-25),
       previousRanks: state.previousRanks || null,
       backups: state.backups || {},
+      scoreSuggestions: state.scoreSuggestions || {},
+      autoScoreSettings: state.autoScoreSettings || defaultState().autoScoreSettings,
       updatedAt: state.updatedAt || new Date().toISOString()
     }, { merge:true }).then(() => {
       setSyncStatus('Saved to Firebase.');
@@ -156,7 +160,7 @@
   }
 
   
-  function rawMatches(){ return (window.ATG_SCHEDULE || []).map(m => Object.assign({}, m, state.scores[m.id] || {})); }
+  function rawMatches(){ return (window.ATG_SCHEDULE || []).map(m => Object.assign({}, m, state.scores[m.id] || {}, state.scoreSuggestions?.[m.id]?.previewOnly ? {} : {})); }
   function matches(){
     const base = rawMatches();
     const derived = deriveKnockoutTeams(base);
@@ -663,13 +667,19 @@
     return `<div class="simple-team">${flagFor(team)}<strong>${esc(team)}</strong></div>`;
   }
 
+  function scoreFor(m){ return m || {}; }
+
   function matchCardScoreText(m){
     const s = scoreFor(m);
     if(!s || s.homeScore === null || s.awayScore === null || s.homeScore === undefined || s.awayScore === undefined) return '';
-    return `${esc(s.homeScore)} - ${esc(s.awayScore)}`;
+    const base = `${esc(s.homeScore)} - ${esc(s.awayScore)}`;
+    if((s.homePens !== null && s.homePens !== undefined && s.homePens !== '') || (s.awayPens !== null && s.awayPens !== undefined && s.awayPens !== '')){
+      return `${base} <small>Pens ${esc(s.homePens ?? '')}-${esc(s.awayPens ?? '')}</small>`;
+    }
+    return base;
   }
 
-  function matchStatus(m, locked, res){
+function matchStatus(m, locked, res){
     if(res) return { label:'Final', cls:'final' };
     if(locked) return { label:'Locked', cls:'locked' };
     const lock = lockDate(m).getTime();
@@ -705,6 +715,151 @@
     saveState();
     renderAll();
   }
+
+  function normalizeScoreSuggestion(raw){
+    if(!raw) return null;
+    const matchId = String(raw.matchId || raw.id || raw.match_id || '').trim();
+    if(!matchId) return null;
+    const status = String(raw.status || raw.matchStatus || raw.state || 'final').toLowerCase();
+    const homeScore = raw.homeScore ?? raw.home_goals ?? raw.homeGoals ?? raw.home ?? null;
+    const awayScore = raw.awayScore ?? raw.away_goals ?? raw.awayGoals ?? raw.away ?? null;
+    const homePens = raw.homePens ?? raw.home_penalties ?? raw.homePenaltyScore ?? raw.homePenalties ?? '';
+    const awayPens = raw.awayPens ?? raw.away_penalties ?? raw.awayPenaltyScore ?? raw.awayPenalties ?? '';
+    const advancer = raw.advancer || raw.winner || raw.winnerSide || '';
+    if(homeScore === null || awayScore === null || homeScore === '' || awayScore === '') return null;
+    return {
+      matchId,
+      homeScore:Number(homeScore),
+      awayScore:Number(awayScore),
+      homePens: homePens === null || homePens === undefined ? '' : homePens,
+      awayPens: awayPens === null || awayPens === undefined ? '' : awayPens,
+      advancer: String(advancer || '').toUpperCase(),
+      status,
+      source: raw.source || 'Score feed',
+      fetchedAt: raw.fetchedAt || new Date().toISOString()
+    };
+  }
+
+  function normalizeScoreFeed(payload){
+    const rows = Array.isArray(payload) ? payload : Array.isArray(payload?.matches) ? payload.matches : Array.isArray(payload?.scores) ? payload.scores : [];
+    return rows.map(normalizeScoreSuggestion).filter(Boolean);
+  }
+
+  async function checkScoreFeed(){
+    const settings = state.autoScoreSettings || defaultState().autoScoreSettings;
+    const url = String(settings.sourceUrl || 'score-feed.json').trim();
+    if(!url){ $('adminStatus').textContent = 'Enter a score feed URL first.'; return; }
+    const started = new Date().toISOString();
+    try{
+      $('adminStatus').textContent = 'Checking score feed...';
+      const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`, { cache:'no-store' });
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const payload = await res.json();
+      const suggestions = normalizeScoreFeed(payload);
+      state.scoreSuggestions = state.scoreSuggestions || {};
+      suggestions.forEach(s => { state.scoreSuggestions[s.matchId] = s; });
+      state.autoScoreSettings = Object.assign({}, settings, { sourceUrl:url, lastCheck:started, lastError:null });
+      addAudit(`Super Admin checked score feed, ${suggestions.length} suggestion(s) found`);
+      saveState();
+      renderAll();
+      renderAdmin();
+      $('adminStatus').textContent = `Score feed checked. ${suggestions.length} suggestion(s) found.`;
+    }catch(err){
+      state.autoScoreSettings = Object.assign({}, settings, { sourceUrl:url, lastCheck:started, lastError:String(err.message || err) });
+      saveLocal();
+      renderAdmin();
+      $('adminStatus').textContent = 'Score feed failed. Manual scoring remains active.';
+      console.error('Score feed error:', err);
+    }
+  }
+
+  function suggestionFor(id){
+    return state.scoreSuggestions?.[String(id)] || null;
+  }
+
+  function suggestionDiffers(m, s){
+    if(!s) return false;
+    return String(m.homeScore ?? '') !== String(s.homeScore ?? '') ||
+      String(m.awayScore ?? '') !== String(s.awayScore ?? '') ||
+      String(m.homePens ?? '') !== String(s.homePens ?? '') ||
+      String(m.awayPens ?? '') !== String(s.awayPens ?? '') ||
+      String(state.advancers?.[m.id] || '') !== String(s.advancer || '');
+  }
+
+  function approveScoreSuggestion(id){
+    const s = suggestionFor(id);
+    const m = matches().find(match => String(match.id) === String(id));
+    if(!s || !m){ $('adminStatus').textContent = 'Score suggestion not found.'; return; }
+    applyScore(id, s.homeScore, s.awayScore, s.advancer || '', s.homePens, s.awayPens, `approved score suggestion from ${s.source || 'score feed'}`);
+  }
+
+  function dismissScoreSuggestion(id){
+    if(state.scoreSuggestions) delete state.scoreSuggestions[String(id)];
+    addAudit(`Super Admin dismissed score suggestion for Match ${id}`);
+    saveState();
+    renderAdmin();
+  }
+
+  function scoreSuggestionRows(){
+    const all = matches();
+    const suggestions = Object.values(state.scoreSuggestions || {}).filter(Boolean);
+    if(!suggestions.length) return '<p class="meta">No score suggestions loaded. Check score feed to look for updates.</p>';
+    return suggestions.map(s => {
+      const m = all.find(match => String(match.id) === String(s.matchId));
+      if(!m) return '';
+      const differs = suggestionDiffers(m, s);
+      const penText = (s.homePens !== '' || s.awayPens !== '') ? ` · Pens ${esc(s.homePens)}-${esc(s.awayPens)}` : '';
+      return `<div class="admin-row clean-admin-row score-suggestion-row ${differs ? '' : 'muted-row'}">
+        <div>#${esc(m.id)}</div>
+        <div class="game-title">${flagFor(m.homeTeam)} ${esc(m.homeTeam)} vs ${flagFor(m.awayTeam)} ${esc(m.awayTeam)}<br><span class="meta">${esc(s.source || 'Score feed')} · ${prettyTimestamp(s.fetchedAt)} · ${differs ? 'Needs approval' : 'Already applied'}</span></div>
+        <div class="suggested-score"><strong>${esc(s.homeScore)}-${esc(s.awayScore)}</strong><span>${penText || 'Suggested result'}</span></div>
+        <button data-approve-score="${esc(m.id)}" type="button" ${differs ? '' : 'disabled'}>Approve</button>
+        <button data-dismiss-score="${esc(m.id)}" type="button" class="ghost small">Dismiss</button>
+      </div>`;
+    }).join('') || '<p class="meta">No matching score suggestions found.</p>';
+  }
+
+  function applyScore(id, homeScore, awayScore, advancer, homePens, awayPens, sourceLabel){
+    const m = matches().find(match => String(match.id) === String(id));
+    if(!m){ $('adminStatus').textContent = 'Match not found.'; return false; }
+    if(homeScore === '' || awayScore === '' || homeScore === null || awayScore === null){ $('adminStatus').textContent = 'Enter both scores before saving.'; return false; }
+    if(Number(homeScore) < 0 || Number(awayScore) < 0){ $('adminStatus').textContent = 'Scores cannot be negative.'; return false; }
+    const penHome = homePens === null || homePens === undefined ? '' : String(homePens);
+    const penAway = awayPens === null || awayPens === undefined ? '' : String(awayPens);
+    let finalAdvancer = advancer || '';
+    if(isKnockout(m.stage) && Number(homeScore) === Number(awayScore)){
+      if((penHome !== '' || penAway !== '') && Number(penHome) !== Number(penAway)){
+        finalAdvancer = Number(penHome) > Number(penAway) ? 'HOME' : 'AWAY';
+      }
+      if(finalAdvancer !== 'HOME' && finalAdvancer !== 'AWAY'){
+        $('adminStatus').textContent = 'Knockout match is tied. Choose which team advances or enter penalty shootout score.';
+        return false;
+      }
+    }
+    state.previousRanks = rankSnapshot();
+    const prior = state.scores[id] ? Object.assign({}, state.scores[id]) : null;
+    const priorAdvancer = state.advancers?.[id] || null;
+    state.scoreHistory = state.scoreHistory || [];
+    state.scoreHistory.push({ id, prior, priorAdvancer, at:new Date().toISOString() });
+    state.scoreHistory = state.scoreHistory.slice(-25);
+    state.scores[id] = { homeScore:Number(homeScore), awayScore:Number(awayScore) };
+    if(penHome !== '' || penAway !== ''){
+      state.scores[id].homePens = penHome === '' ? '' : Number(penHome);
+      state.scores[id].awayPens = penAway === '' ? '' : Number(penAway);
+    }
+    state.advancers = state.advancers || {};
+    if(isKnockout(m.stage) && Number(homeScore) === Number(awayScore)) state.advancers[id] = finalAdvancer;
+    else delete state.advancers[id];
+    const penAudit = (penHome !== '' || penAway !== '') ? `, penalties ${penHome || 0}-${penAway || 0}` : '';
+    addAudit(`Super Admin ${sourceLabel || 'updated'} Match ${id} score to ${homeScore}-${awayScore}${penAudit}${state.advancers[id] ? `, ${pickLabel(m, state.advancers[id])} advances` : ''}`);
+    if(state.scoreSuggestions) delete state.scoreSuggestions[String(id)];
+    saveState();
+    renderAll();
+    renderAdmin();
+    return true;
+  }
+
+
   function renderAdmin(){
     if(!adminUnlocked){ $('adminTools').innerHTML = ''; $('adminScores').innerHTML = ''; return; }
     const all = matches().sort((a,b) => Number(a.id) - Number(b.id));
@@ -716,6 +871,8 @@
     const completedRows = all.filter(hasScore).slice(-12).reverse().map(adminCompletedRow).join('') || '<p class="meta">No completed matches yet.</p>';
     const lastSync = state.updatedAt ? prettyTimestamp(state.updatedAt) : 'Not synced yet';
     const firebaseText = firebaseReady ? 'Firebase connected' : 'Local mode';
+    const settings = state.autoScoreSettings || defaultState().autoScoreSettings;
+    const feedStatus = settings.lastError ? `Last check failed: ${settings.lastError}` : settings.lastCheck ? `Last checked ${prettyTimestamp(settings.lastCheck)}` : 'Not checked yet';
     $('adminTools').innerHTML = `
       <div class="admin-health-grid">
         <div class="admin-health-card"><span>Status</span><strong>${esc(firebaseText)}</strong></div>
@@ -723,8 +880,20 @@
         <div class="admin-health-card"><span>Signed In</span><strong>Super Admin</strong></div>
       </div>
       <div class="admin-section">
+        <h3>Automatic Score Suggestions</h3>
+        <p class="meta">Phase 1 keeps manual scoring. Phase 2 checks a score feed. Phase 3 lets Super Admin approve each result before standings update.</p>
+        <div class="score-feed-controls">
+          <label>Score Feed URL
+            <input id="scoreFeedUrl" type="text" value="${esc(settings.sourceUrl || 'score-feed.json')}" placeholder="score-feed.json or approved API endpoint">
+          </label>
+          <button id="checkScoreFeed" type="button">Check score feed</button>
+        </div>
+        <p class="meta">${esc(feedStatus)}</p>
+        <div class="admin-list">${scoreSuggestionRows()}</div>
+      </div>
+      <div class="admin-section">
         <h3>Scores</h3>
-        <p class="meta">Enter scores, clear results, and pick an advancing team if a knockout match is tied.</p>
+        <p class="meta">Manual score entry remains the source of truth until a suggested score is approved.</p>
         <div class="admin-list">${scoreRows}</div>
       </div>
       <div class="admin-section">
@@ -747,6 +916,16 @@
       </div>`;
     $('adminScores').innerHTML = `<div class="audit-box"><h3>Audit Log</h3>${auditHtml()}</div>`;
 
+    const feedBtn = $('checkScoreFeed');
+    if(feedBtn){
+      feedBtn.addEventListener('click', () => {
+        const input = $('scoreFeedUrl');
+        state.autoScoreSettings = Object.assign(defaultState().autoScoreSettings, state.autoScoreSettings || {}, { sourceUrl: input ? input.value.trim() : 'score-feed.json' });
+        checkScoreFeed();
+      });
+    }
+    document.querySelectorAll('[data-approve-score]').forEach(b => b.addEventListener('click', () => approveScoreSuggestion(b.dataset.approveScore)));
+    document.querySelectorAll('[data-dismiss-score]').forEach(b => b.addEventListener('click', () => dismissScoreSuggestion(b.dataset.dismissScore)));
     const resetBtn = $('resetLocal');
     if(resetBtn){
       resetBtn.addEventListener('click', () => {
@@ -769,14 +948,18 @@
     document.querySelectorAll('[data-toggle-lock]').forEach(b => b.addEventListener('click', () => toggleLock(b.dataset.toggleLock)));
   }
 
-  function adminScoreRow(m){
+function adminScoreRow(m){
     const tied = isKnockout(m.stage) && hasScore(m) && Number(m.homeScore) === Number(m.awayScore);
     const adv = state.advancers?.[m.id] || '';
+    const suggestion = suggestionFor(m.id);
+    const suggestionNote = suggestion ? `<span class="score-suggestion-pill">Suggestion available</span>` : '';
     return `<div class="admin-row clean-admin-row">
       <div>#${esc(m.id)}</div>
-      <div class="game-title">${flagFor(m.homeTeam)} ${esc(m.homeTeam)} vs ${flagFor(m.awayTeam)} ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)} · ${lockStatusText(m)}</span></div>
+      <div class="game-title">${flagFor(m.homeTeam)} ${esc(m.homeTeam)} vs ${flagFor(m.awayTeam)} ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)} · ${lockStatusText(m)} ${suggestionNote}</span></div>
       <input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home">
       <input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away">
+      <input data-home-pens="${esc(m.id)}" class="${isKnockout(m.stage) ? '' : 'hidden'}" type="number" min="0" value="${m.homePens ?? ''}" placeholder="Home pens">
+      <input data-away-pens="${esc(m.id)}" class="${isKnockout(m.stage) ? '' : 'hidden'}" type="number" min="0" value="${m.awayPens ?? ''}" placeholder="Away pens">
       <select data-advancer="${esc(m.id)}" class="admin-advancer ${isKnockout(m.stage) ? '' : 'hidden'}">
         <option value="">Advancer if tied</option>
         <option value="HOME" ${adv === 'HOME' ? 'selected' : ''}>${esc(m.homeTeam)} advances</option>
@@ -784,11 +967,10 @@
       </select>
       <button data-save-score="${esc(m.id)}" type="button">Save</button>
       <button data-clear-score="${esc(m.id)}" type="button" class="ghost small">Clear</button>
-      ${tied && !adv ? '<small class="admin-warning">Needs winner</small>' : ''}
     </div>`;
   }
 
-  function adminLockRow(m){
+function adminLockRow(m){
     return `<div class="admin-row clean-admin-row lock-only-row">
       <div>#${esc(m.id)}</div>
       <div class="game-title">${esc(m.homeTeam)} vs ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)} · ${lockStatusText(m)}</span></div>
@@ -812,33 +994,14 @@
   function saveScore(id){
     const h = document.querySelector(`[data-home="${CSS.escape(id)}"]`).value;
     const a = document.querySelector(`[data-away="${CSS.escape(id)}"]`).value;
+    const hp = document.querySelector(`[data-home-pens="${CSS.escape(id)}"]`)?.value || '';
+    const ap = document.querySelector(`[data-away-pens="${CSS.escape(id)}"]`)?.value || '';
     const advSel = document.querySelector(`[data-advancer="${CSS.escape(id)}"]`);
     const advancer = advSel ? advSel.value : '';
-    const m = matches().find(match => String(match.id) === String(id));
-    if(!m){ $('adminStatus').textContent = 'Match not found.'; return; }
-    if(h === '' || a === ''){ $('adminStatus').textContent = 'Enter both scores before saving.'; return; }
-    if(Number(h) < 0 || Number(a) < 0){ $('adminStatus').textContent = 'Scores cannot be negative.'; return; }
-    if(isKnockout(m.stage) && Number(h) === Number(a) && advancer !== 'HOME' && advancer !== 'AWAY'){
-      $('adminStatus').textContent = 'Knockout match is tied. Choose which team advances.';
-      return;
-    }
-    state.previousRanks = rankSnapshot();
-    const prior = state.scores[id] ? Object.assign({}, state.scores[id]) : null;
-    const priorAdvancer = state.advancers?.[id] || null;
-    state.scoreHistory = state.scoreHistory || [];
-    state.scoreHistory.push({ id, prior, priorAdvancer, at:new Date().toISOString() });
-    state.scoreHistory = state.scoreHistory.slice(-25);
-    state.scores[id] = { homeScore: Number(h), awayScore: Number(a) };
-    state.advancers = state.advancers || {};
-    if(isKnockout(m.stage) && Number(h) === Number(a)) state.advancers[id] = advancer;
-    else delete state.advancers[id];
-    addAudit(`Super Admin updated Match ${id} score to ${h}-${a}${state.advancers[id] ? `, ${pickLabel(m, state.advancers[id])} advances` : ''}`);
-    saveState();
-    renderAll();
-    renderAdmin();
+    applyScore(id, h, a, advancer, hp, ap, 'updated');
   }
 
-  function clearScore(id){
+function clearScore(id){
     const prior = state.scores[id] ? Object.assign({}, state.scores[id]) : null;
     const priorAdvancer = state.advancers?.[id] || null;
     if(!prior && !priorAdvancer){ $('adminStatus').textContent = 'No score to clear.'; return; }
@@ -1232,13 +1395,13 @@
     const tied = res === 'DRAW';
     const homeWinner = res === 'HOME';
     const awayWinner = res === 'AWAY';
-    const score = hasScore(m) ? `${scoreText(m.homeScore)} - ${scoreText(m.awayScore)}` : 'TBD';
+    const score = hasScore(m) ? matchCardScoreText(m) : 'TBD';
     const advance = advanceText(m, advanceMap);
     const status = !hasScore(m) ? 'TBD' : tied ? 'Needs winner' : 'Final';
     return `<article class="bracket-card ${res && !tied ? 'complete' : ''} ${tied ? 'needs-winner' : ''}">
       <div class="bracket-card-head"><span>Match ${esc(m.id)}</span><small>${esc(m.stage)}</small></div>
-      <div class="bracket-team ${homeWinner ? 'winner' : ''}">${flagFor(m.homeTeam)}<strong>${esc(m.homeTeam || 'TBD')}</strong><span>${scoreText(m.homeScore)}</span></div>
-      <div class="bracket-team ${awayWinner ? 'winner' : ''}">${flagFor(m.awayTeam)}<strong>${esc(m.awayTeam || 'TBD')}</strong><span>${scoreText(m.awayScore)}</span></div>
+      <div class="bracket-team ${homeWinner ? 'winner' : ''}">${flagFor(m.homeTeam)}<strong>${esc(m.homeTeam || 'TBD')}</strong><span>${scoreText(m.homeScore)}${m.homePens !== undefined && m.homePens !== null && m.homePens !== '' ? ` (${esc(m.homePens)})` : ''}</span></div>
+      <div class="bracket-team ${awayWinner ? 'winner' : ''}">${flagFor(m.awayTeam)}<strong>${esc(m.awayTeam || 'TBD')}</strong><span>${scoreText(m.awayScore)}${m.awayPens !== undefined && m.awayPens !== null && m.awayPens !== '' ? ` (${esc(m.awayPens)})` : ''}</span></div>
       <div class="bracket-footer"><span class="bracket-status">${esc(status)}</span><span>${esc(advance)}</span></div>
     </article>`;
   }
