@@ -1105,7 +1105,7 @@ function clearScore(id){
     const lockMs = lock - now;
     if(hasScore(m)) return { show:true, cls:'lock-final', label:'Final', value:'Final' };
     if(now >= lock) return { show:true, cls:'lock-locked', label:'Picks Locked', value:'🔒 Picks Locked' };
-    if(kick - now > 24 * 60 * 60 * 1000) return { show:false, cls:'', label:'', value:'' };
+    if(lockMs > 24 * 60 * 60 * 1000) return { show:false, cls:'', label:'', value:'' };
     if(lockMs <= 60 * 60 * 1000) return { show:true, cls:'lock-red', label:'Pick Lock In', value:formatDuration(lockMs) };
     if(lockMs <= 6 * 60 * 60 * 1000) return { show:true, cls:'lock-gold', label:'Pick Lock In', value:formatDuration(lockMs) };
     return { show:true, cls:'lock-green', label:'Pick Lock In', value:formatDuration(lockMs) };

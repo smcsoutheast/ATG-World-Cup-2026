@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-pick-lock-in`
+Build: `20260602-pick-lock-verified`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-pick-lock-in`.
+6. Confirm the footer shows `Build 20260602-pick-lock-verified`.
 
 Hard refresh tips:
 
@@ -614,7 +614,7 @@ ATG scoring:
 
 ## Pick Lock In countdown
 
-Match cards show a Pick Lock In countdown only when the match is inside the next 24 hours.
+Match cards show a Pick Lock In countdown when the match lock time is inside the next 24 hours.
 
 Countdown colors:
 - More than 6 hours before lock: green
@@ -624,3 +624,10 @@ Countdown colors:
 - Final: grey
 
 The countdown uses the match lock time, which is one hour before kickoff.
+
+
+### Pick lock example
+
+For a 3:00 PM kickoff, picks lock at 2:00 PM.
+
+The match card countdown begins showing at 2:00 PM the day before, because the pick lock deadline is then inside 24 hours.
