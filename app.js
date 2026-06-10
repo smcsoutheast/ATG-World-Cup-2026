@@ -636,7 +636,7 @@
     const options = isKnockout(m.stage) ? ['HOME','AWAY'] : ['HOME','DRAW','AWAY'];
     const buttons = activeRegion
       ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div><p class="meta">${locked ? 'Picks locked for this match.' : 'Only your region pick is visible before lock.'}</p>`
-      : '<p class="meta">Unlock your region to submit picks. Public picks stay hidden until lock.</p>';
+      : '';
     const scoreHtml = res ? `<div class="simple-score">${matchCardScoreText(m)}<span>${esc(resultName(m,res))}</span></div>` : '';
     const pickArea = locked ? `<div class="pick-chip-grid">${pickChipsHtml(m)}</div>${pickSummaryHtml(m, true)}` : `<div class="simple-submit-row"><strong>Submitted: ${submitted} of ${REGIONS.length}</strong><span>${remaining} remaining</span><span>Picks reveal at lock</span></div>`;
     return `<article class="simple-match-card ${res ? 'is-final' : ''}">
@@ -657,7 +657,7 @@
         <span>${esc(m.venue)}${m.city ? ` · ${esc(m.city)}` : ''}</span>
       </div>
       ${lockNoticeHtml(m)}
-      <div class="simple-reveal">${locked ? 'Regional selections are visible.' : 'Regional selections will be revealed at lock time.'}</div>
+      <div class="simple-reveal">${locked ? 'Regional selections are visible.' : ''}</div>
       <div class="pick-panel">${buttons}</div>
       <div class="picks simple-picks">${pickArea}</div>
     </article>`;
