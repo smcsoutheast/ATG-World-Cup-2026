@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-auto-scores`
+Build: `20260602-pick-lock-in`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-auto-scores`.
+6. Confirm the footer shows `Build 20260602-pick-lock-in`.
 
 Hard refresh tips:
 
@@ -610,3 +610,17 @@ ATG scoring:
 - France pick is correct.
 - France receives 2 GF and 2 GA.
 - Penalty kicks do not add to GF or GA.
+
+
+## Pick Lock In countdown
+
+Match cards show a Pick Lock In countdown only when the match is inside the next 24 hours.
+
+Countdown colors:
+- More than 6 hours before lock: green
+- Under 6 hours before lock: yellow/gold
+- Under 1 hour before lock: red
+- Locked: black
+- Final: grey
+
+The countdown uses the match lock time, which is one hour before kickoff.

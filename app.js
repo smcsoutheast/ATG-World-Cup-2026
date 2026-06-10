@@ -1098,17 +1098,23 @@ function clearScore(id){
     return Date.now() >= lockDate(m).getTime();
   }
 
-  function lockNoticeHtml(m){
+  function pickLockState(m){
     const now = Date.now();
     const kick = kickoffDate(m).getTime();
     const lock = lockDate(m).getTime();
-    if(now >= lock){
-      return `<div class="lock-countdown locked" data-lock-countdown="${esc(m.id)}">Picks locked</div>`;
-    }
-    if(kick - now <= 24 * 60 * 60 * 1000){
-      return `<div class="lock-countdown" data-lock-countdown="${esc(m.id)}">Locks in ${esc(formatDuration(lock - now))}</div>`;
-    }
-    return '';
+    const lockMs = lock - now;
+    if(hasScore(m)) return { show:true, cls:'lock-final', label:'Final', value:'Final' };
+    if(now >= lock) return { show:true, cls:'lock-locked', label:'Picks Locked', value:'🔒 Picks Locked' };
+    if(kick - now > 24 * 60 * 60 * 1000) return { show:false, cls:'', label:'', value:'' };
+    if(lockMs <= 60 * 60 * 1000) return { show:true, cls:'lock-red', label:'Pick Lock In', value:formatDuration(lockMs) };
+    if(lockMs <= 6 * 60 * 60 * 1000) return { show:true, cls:'lock-gold', label:'Pick Lock In', value:formatDuration(lockMs) };
+    return { show:true, cls:'lock-green', label:'Pick Lock In', value:formatDuration(lockMs) };
+  }
+
+  function lockNoticeHtml(m){
+    const stateInfo = pickLockState(m);
+    if(!stateInfo.show) return '';
+    return `<div class="lock-countdown ${esc(stateInfo.cls)}" data-lock-countdown="${esc(m.id)}"><span>${esc(stateInfo.label)}</span><strong>${esc(stateInfo.value)}</strong></div>`;
   }
 
   function updateCountdowns(){
@@ -1117,16 +1123,13 @@ function clearScore(id){
       const id = el.getAttribute('data-lock-countdown');
       const m = matches().find(x => String(x.id) === String(id));
       if(!m) return;
-      const now = Date.now();
-      const kick = kickoffDate(m).getTime();
-      const lock = lockDate(m).getTime();
-      if(now >= lock){
-        el.textContent = 'Picks locked';
-        el.classList.add('locked');
-      } else if(kick - now <= 24 * 60 * 60 * 1000){
-        el.textContent = `Locks in ${formatDuration(lock - now)}`;
-        el.classList.remove('locked');
+      const stateInfo = pickLockState(m);
+      if(!stateInfo.show){
+        el.remove();
+        return;
       }
+      el.className = `lock-countdown ${stateInfo.cls}`.trim();
+      el.innerHTML = `<span>${esc(stateInfo.label)}</span><strong>${esc(stateInfo.value)}</strong>`;
     });
   }
 
