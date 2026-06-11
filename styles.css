@@ -1,739 +1,1062 @@
-# Around the Grounds, FIFA World Cup 2026 Edition
-
-A static GitHub Pages app for the SMC staff FIFA World Cup 2026 prediction competition.
-
-The app supports regional picks, live standings, World Cup group standings, automatic knockout advancement, hidden picks until lock, Firebase multi-device sync, and a clean Super Admin scoring workflow.
-
-## Current build
-
-Build: `20260602-score-feed-404-safe`
-
-This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
-
-## What is included
-
-- `index.html`, main page and app structure
-- `styles.css`, site styling
-- `app.js`, competition logic
-- `schedule.js`, built-in match schedule
-- `firebase-config.js`, backup Firebase config
-- `firestore.rules`, Firestore rules to publish
-- `.nojekyll`, required for clean GitHub Pages hosting
-- `assets/`, backup logo and favicon files
-- `README.md`, setup and operations guide
-
-## Main features
-
-### Public competition view
-
-- ATG standings
-- Match cards grouped by date
-- Stage filter buttons
-- Day filter buttons
-- One clean tournament clock
-- Picks hidden until each match locks
-- Submitted and remaining counts before lock
-- Regional picks revealed after lock
-- Correct and incorrect pick highlighting after scores are entered
-- Form icons for W, D, and L
-- Award cards under standings
-
-### ATG standings
-
-Standings are sorted by:
-
-1. Total points
-2. Goal difference
-3. Goals for
-
-Standings columns:
-
-- Move
-- Region
-- P
-- W
-- D
-- L
-- GF
-- GA
-- GD
-- Pts
-- Form
-- Acc
-
-Point system:
-
-- Correct non-draw pick: 3 points
-- Correct draw pick: 1 point
-- Incorrect pick: 0 points
-- No Pick after lock and score entry: 0 points and recorded as a loss
-
-Goals for and goals against:
-
-- If a region picks a winning team, it earns that team’s goals as GF
-- The opposing team’s goals count as GA
-- Draw picks earn 0 GF and 0 GA
-
-### Award cards
-
-The ATG Standings tab includes four awards:
-
-- Golden Ball, highest accuracy
-- Golden Boot, highest goals scored
-- Golden Glove, lowest goals against
-- Hot Streak, longest active winning streak
-
-Award tie-breakers are handled in app logic.
-
-### Match cards
-
-Match cards are designed for fast scanning.
-
-Each card includes:
-
-- Match number
-- Stage
-- Status pill
-- Team flags
-- Home team
-- Away team
-- Date
-- Time ET
-- Venue
-- Lock countdown when applicable
-- Submitted count before lock
-- Pick chips after lock
-- Score display after result entry
-
-Match status values:
-
-- Open
-- Locks Soon
-- Locked
-- Final
-
-### Pick lock rules
-
-Picks lock 1 hour before kickoff for each match.
-
-Before lock:
-
-- Public users see submitted and remaining counts
-- Regional picks are hidden
-- A logged-in region sees its own pick
-- Other regions’ picks remain hidden
-
-After lock:
-
-- All regional picks are revealed
-- Picks cannot be edited
-- Pick results are calculated after scores are entered
-
-### Tournament clock
-
-The header has one main tournament clock with seconds.
-
-Clock behavior:
-
-- Before tournament start: countdown to first kickoff
-- During tournament: countdown to next kickoff
-- Final day: countdown to Final kickoff
-- After Final result: tournament complete with champion
-
-### World Cup Groups tab
-
-The Groups tab shows one group at a time.
-
-Each group table includes:
-
-- P, total group matches played
-- W, wins
-- D, draws
-- L, losses
-- GF, goals scored
-- GA, goals conceded
-- GD, goal difference
-- Pts, points
-- Form, group play form only
-- Knockout, current advancement status
-
-Group ranking uses the configured tie-break order:
-
-1. Head-to-head points
-2. Head-to-head goal difference
-3. Head-to-head goals scored
-4. Overall goal difference
-5. Overall goals scored
-
-The Groups tab also includes:
-
-- Group winner card
-- Runner-up card
-- Third-place status card
-- Wildcard third-place advancement cards
-- Third-place teams out card
-- Collapsed tie-break details
-
-### Wildcard third-place cards
-
-The app shows 8 wildcard third-place advancement cards.
-
-Eligible group sets:
-
-- A/B/C/D/F
-- C/D/F/G/H
-- C/E/F/H/I
-- E/H/I/J/K
-- B/E/F/I/J
-- A/E/H/I/J
-- E/F/G/I/J
-- D/E/I/J/L
-
-A third-place group can only be assigned to one wildcard card.
-
-Third-place teams not assigned to a wildcard card display as eliminated.
-
-### Knockout bracket tab
-
-The Knockout tab includes a bracket chart.
-
-Behavior:
-
-- Round of 32 fills from group standings
-- Round of 16 fills from Round of 32 winners
-- Quarter-finals fill from Round of 16 winners
-- Semi-finals fill from Quarter-final winners
-- Third Place and Final fill from Semi-final results
-- Champion card shows after Final score entry
-
-If a knockout score is tied, Super Admin must choose who advances.
-
-### Competition Insights tab
-
-The Insights tab includes:
-
-- Leader card
-- Tightest Race card
-- Best Form card
-- Biggest Mover card
-- Pick Trends panel
-- Region Spotlight panel
-- Awards Race panel
-- Upset Watch panel
-
-## Regions and passcodes
-
-| Region | Members | Passcode |
-| --- | --- | --- |
-| Steve & Josh | Steve, Josh | SJ2026 |
-| Southeast | Justin, Ashley | SE2026 |
-| Interns | Drake, Tucker, Vince | IN2026 |
-| Texas/West | Zarin, Gabriella, Michelle | TX2026 |
-| Midwest | Sean, Andrew, Sam | MW2026 |
-| Mid-Atlantic | John, Skyler | MA2026 |
-
-## Super Admin
-
-Open Super Admin from the shield icon in the lower right.
-
-Super Admin passcode:
-
-```text
-ATG2026ADMIN
-```
-
-Super Admin includes:
-
-- Score entry
-- Clear result
-- Lock controls
-- Firebase status
-- Last sync time
-- Reload from Firebase
-- Reset local data
-- Recalculate all
-- Undo last score
-- Audit log
-- Knockout tie validation
-- Home advances or Away advances selector for tied knockout matches
-
-## Firebase setup
-
-The project uses one Firestore document for shared data:
-
-```text
-competitions/worldcup2026
-```
-
-Firebase config is embedded in `index.html` and also included in `firebase-config.js` as a backup.
-
-### Required Firebase steps
-
-1. Open Firebase Console.
-2. Select project `atg-world-cup-26`.
-3. Open Firestore Database.
-4. Create the Firestore database if it does not exist.
-5. Open Firestore Rules.
-6. Paste the contents of `firestore.rules`.
-7. Publish the rules.
-8. Open the deployed GitHub Pages site.
-9. Confirm the Firebase status bar shows connected.
-
-### Included Firestore rules
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /competitions/worldcup2026 {
-      allow read, write: if true;
-    }
+:root{
+  --bg:#07131f;
+  --panel:#0d2133;
+  --panel2:#102b43;
+  --text:#f5f7fb;
+  --muted:#a9b8c8;
+  --line:#24445f;
+  --gold:#f4c95d;
+  --green:#41d37d;
+  --red:#ff6b6b;
+  --blue:#62b6ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#06111d,#0b1c2d 45%,#081521);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:34px 22px;border-bottom:1px solid var(--line);background:radial-gradient(circle at top left,#173c5c,#07131f 50%)}
+h1{margin:0;font-size:clamp(34px,6vw,72px);letter-spacing:-2px}
+h2{margin:0;font-size:24px}.sub{margin:8px 0 0;color:var(--muted)}.eyebrow{margin:0 0 6px;text-transform:uppercase;letter-spacing:2px;color:var(--gold);font-size:12px;font-weight:700}
+main{max-width:1200px;margin:0 auto;padding:22px}.panel{background:rgba(13,33,51,.92);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:18px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1px}td{font-weight:700}.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}label{display:grid;gap:7px;color:var(--muted);font-weight:700}select,input,button{border:1px solid var(--line);border-radius:12px;background:#071725;color:var(--text);padding:12px;font:inherit}button{cursor:pointer;background:var(--gold);color:#111827;border:0;font-weight:800}.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}.small{padding:8px 10px;font-size:13px}.pass-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.pass-row input{min-width:230px}.match-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px}.card{background:rgba(16,43,67,.95);border:1px solid var(--line);border-radius:18px;overflow:hidden}.card-head{padding:14px 16px;background:#081929;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}.stage{color:var(--gold);font-weight:800}.meta{color:var(--muted);font-size:13px}.teams{padding:18px 16px;display:grid;gap:12px}.team-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:20px;font-weight:900}.score{font-size:22px;color:var(--gold)}.venue{color:var(--muted);font-size:13px}.pick-panel{border-top:1px solid var(--line);padding:14px 16px;display:grid;gap:10px}.pick-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pick-buttons.knockout{grid-template-columns:repeat(2,1fr)}.pick-btn{background:#102f49;color:var(--text);border:1px solid var(--line);padding:10px;border-radius:10px}.pick-btn.active{background:var(--green);color:#062014}.picks{padding:14px 16px;border-top:1px solid var(--line);display:grid;gap:8px}.pick-line{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:14px}.correct{color:var(--green);font-weight:900}.wrong{color:var(--red)}.draw{color:var(--blue)}dialog{border:0;border-radius:18px;padding:0;background:transparent;color:var(--text);width:min(940px,94vw)}.admin-box{background:#0d2133;border:1px solid var(--line);border-radius:18px;padding:18px}.admin-scores{display:grid;gap:10px;max-height:62vh;overflow:auto}.admin-row{display:grid;grid-template-columns:70px 1fr 80px 80px auto;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:10px 0}.admin-row input{width:100%}footer{text-align:center;color:var(--muted);padding:28px}
+@media (max-width:760px){.hero{align-items:flex-start}.controls{grid-template-columns:1fr}.hide-sm{display:none}table{min-width:520px}.admin-row{grid-template-columns:1fr 70px 70px}.admin-row .game-title{grid-column:1/-1}.pick-buttons{grid-template-columns:1fr}.pick-buttons.knockout{grid-template-columns:1fr}}
+.sync-status{margin:0 auto 16px;max-width:1180px;padding:10px 14px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(18,33,65,.85);color:#dff6ff;font-size:14px}.sync-status.bad{border-color:#ffb4b4;color:#ffe1e1;background:rgba(80,20,28,.9)}
+.admin-shield{position:fixed;right:18px;bottom:18px;width:54px;height:54px;border-radius:50%;z-index:50;display:grid;place-items:center;font-size:24px;background:var(--gold);color:#111827;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.admin-tools{margin-bottom:14px}.admin-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.entry-panel .pass-row select{min-width:260px}.admin-row{grid-template-columns:60px minmax(190px,1fr) repeat(auto-fit,minmax(78px,120px))}.admin-row [data-home-team],.admin-row [data-away-team]{min-width:150px}
+@media (max-width:760px){.admin-shield{right:14px;bottom:14px}.admin-row{grid-template-columns:1fr 1fr}.admin-row>div:first-child,.admin-row .game-title{grid-column:1/-1}.entry-panel .pass-row select,.pass-row input{width:100%;min-width:0}}
+
+.countdown-panel {
+  display: grid;
+  gap: 6px;
+}
+.countdown-large {
+  font-size: clamp(1.6rem, 4vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+.lock-countdown {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  font-weight: 900;
+  display: grid;
+  gap: 2px;
+}
+.lock-countdown span {
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .9;
+}
+.lock-countdown strong {
+  font-size: 16px;
+  line-height: 1.15;
+}
+.lock-countdown.lock-green {
+  background: rgba(22, 163, 74, .16);
+  border-color: rgba(22, 163, 74, .42);
+  color: #bbf7d0;
+}
+.lock-countdown.lock-gold {
+  background: rgba(244, 201, 93, .17);
+  border-color: rgba(244, 201, 93, .5);
+  color: #fde68a;
+}
+.lock-countdown.lock-red {
+  background: rgba(220, 38, 38, .18);
+  border-color: rgba(248, 113, 113, .52);
+  color: #fecaca;
+}
+.lock-countdown.lock-locked {
+  background: #050505;
+  border-color: rgba(255,255,255,.22);
+  color: #fff;
+}
+.lock-countdown.lock-final {
+  background: rgba(148, 163, 184, .18);
+  border-color: rgba(148, 163, 184, .45);
+  color: #e5e7eb;
+}
+.pick-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.tab-panel{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.tab-btn{background:#102f49;color:var(--text);border:1px solid var(--line)}.tab-btn.active{background:var(--gold);color:#111827}.hidden{display:none!important}.groups-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}.group-card{background:rgba(16,43,67,.88);border:1px solid var(--line);border-radius:16px;overflow:hidden}.group-card h3{margin:0;padding:14px 16px;border-bottom:1px solid var(--line);color:var(--gold)}.group-table-wrap{overflow:auto}.group-table{min-width:620px}.group-table th,.group-table td{padding:9px 8px}.group-table tr.qualified td:first-child{color:var(--green)}.group-table tr.third-place td:first-child{color:var(--blue)}.qualifier-box{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}.qualifier-box h3{margin:0 0 12px}.qualifier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.qualifier-grid>div{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:14px}.qualifier-grid h4{margin:0 0 10px;color:var(--gold)}.qualifier-grid ol{margin:0;padding-left:22px}.qualifier-grid li{margin:6px 0;font-weight:800}
+@media (max-width:760px){.groups-grid{grid-template-columns:1fr}.group-table{min-width:420px}.tab-panel{display:grid;grid-template-columns:1fr 1fr}}
+
+/* World Cup flag match cards */
+.match-grid{
+  grid-template-columns:1fr;
+}
+.wc-card{
+  overflow:hidden;
+  border-radius:20px;
+  background:#f7f2df;
+  border:1px solid rgba(255,255,255,.25);
+  color:#0b1624;
+  box-shadow:0 18px 40px rgba(0,0,0,.28);
+}
+.wc-card-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:16px 22px;
+  background:linear-gradient(90deg,#072947,#0b4772 72%,#123e65);
+  border-top:8px solid transparent;
+  border-image:linear-gradient(90deg,#ffd43b,#35d06f,#0fb5d8,#ef4444) 1;
+}
+.match-pill,.date-pill{
+  border-radius:999px;
+  font-weight:900;
+  letter-spacing:.02em;
+  white-space:nowrap;
+}
+.match-pill{
+  background:#ffcc31;
+  color:#111827;
+  padding:12px 22px;
+  text-transform:uppercase;
+}
+.date-pill{
+  color:#fff;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);
+  padding:10px 18px;
+  box-shadow:inset 0 0 18px rgba(255,255,255,.08);
+}
+.wc-match-body{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 128px minmax(0,1fr);
+  gap:16px;
+  padding:28px 22px 18px;
+  background:
+    linear-gradient(rgba(255,255,255,.72),rgba(255,255,255,.72)),
+    repeating-linear-gradient(0deg,rgba(20,60,90,.08) 0 1px,transparent 1px 32px),
+    repeating-linear-gradient(90deg,rgba(20,60,90,.06) 0 1px,transparent 1px 32px),
+    #f8f0d9;
+}
+.flag-panel{
+  position:relative;
+  min-height:210px;
+  border-radius:18px;
+  overflow:hidden;
+  background-size:cover;
+  background-position:center;
+  border:1px solid rgba(9,30,50,.14);
+  box-shadow:inset 0 0 0 999px rgba(0,0,0,.02);
+}
+.flag-panel::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:repeating-linear-gradient(105deg,rgba(255,255,255,.14) 0 9px,rgba(255,255,255,0) 9px 18px);
+  pointer-events:none;
+}
+.flag-panel.no-flag{
+  background:linear-gradient(135deg,#0c3458,#1f6b9b);
+}
+.team-label-card{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:min(430px,52%);
+  min-height:116px;
+  display:grid;
+  align-content:center;
+  gap:8px;
+  padding:20px 24px;
+  background:rgba(255,255,255,.9);
+  border:1px solid rgba(255,255,255,.75);
+  border-radius:14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.14);
+  z-index:2;
+}
+.flag-panel.home .team-label-card{left:26px;text-align:left;}
+.flag-panel.away .team-label-card{right:26px;text-align:right;}
+.team-label-card span{
+  color:#39465a;
+  font-size:13px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.team-label-card strong{
+  color:#08111f;
+  font-size:clamp(26px,4vw,42px);
+  line-height:1;
+}
+.vs-column{
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8px;
+  min-height:210px;
+  border-radius:18px;
+  background:linear-gradient(180deg,#fff8d8,#fffdf1);
+  border:1px solid rgba(244,201,93,.35);
+  box-shadow:0 10px 28px rgba(0,0,0,.08);
+  color:#0b1624;
+}
+.ball-icon{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:2px solid rgba(12,59,96,.45);
+  font-size:21px;
+}
+.vs-text{
+  font-size:34px;
+  font-weight:950;
+  letter-spacing:-.04em;
+}
+.group-text{
+  color:#4a5568;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-weight:900;
+  text-align:center;
+  line-height:1.25;
+}
+.match-meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 22px 18px;
+  background:#f8f0d9;
+  color:#334155;
+  font-weight:800;
+}
+.wc-card .lock-countdown{
+  margin:0 22px 18px;
+  color:#0b1624;
+  background:rgba(255,255,255,.72);
+  border-color:rgba(9,30,50,.14);
+}
+.wc-card .pick-panel,
+.wc-card .picks{
+  background:#0d2133;
+  color:var(--text);
+}
+.flag-small{
+  width:30px;
+  height:20px;
+  border-radius:3px;
+  vertical-align:-3px;
+  margin-right:7px;
+  display:inline-block;
+  line-height:1;
+  box-shadow:0 0 0 1px rgba(255,255,255,.18);
+  background:rgba(255,255,255,.1);
+}
+.flag-empty{
+  display:inline-grid;
+  background:rgba(255,255,255,.12);
+}
+.group-table td:first-child{
+  white-space:nowrap;
+}
+@media (max-width:900px){
+  .wc-match-body{
+    grid-template-columns:1fr;
+  }
+  .vs-column{
+    min-height:92px;
+  }
+  .team-label-card{
+    width:70%;
   }
 }
-```
-
-These rules are open for the internal competition app. Passcodes are app-level controls, not true authentication. For a private production app, replace passcodes with Firebase Authentication and locked Firestore rules.
-
-## GitHub Pages deployment
-
-Upload every file from the ZIP to the repository root.
-
-Required root files:
-
-- `index.html`
-- `styles.css`
-- `app.js`
-- `schedule.js`
-- `firebase-config.js`
-- `firestore.rules`
-- `.nojekyll`
-- `README.md`
-
-Recommended deployment steps:
-
-1. Delete old files from the GitHub repository root.
-2. Upload all files from this ZIP.
-3. Commit changes.
-4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
-5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-score-feed-404-safe`.
-
-Hard refresh tips:
-
-- Desktop Chrome: Ctrl + Shift + R
-- Mac Chrome: Cmd + Shift + R
-- iPhone Safari: close the tab, reopen the GitHub Pages URL
-
-## Event-day workflow
-
-### Before tournament
-
-1. Upload final files to GitHub.
-2. Publish Firestore rules.
-3. Open site on two devices.
-4. Enter a test pick on one device.
-5. Confirm it appears on the second device.
-6. Use Super Admin to reset local data if needed.
-7. Confirm no test score remains in Firebase.
-
-### Before each matchday
-
-1. Open Super Admin.
-2. Confirm Firebase connected.
-3. Review today’s matches.
-4. Confirm picks are open or locked as expected.
-5. Confirm match cards show submitted and remaining counts.
-
-### After each match
-
-1. Open Super Admin.
-2. Enter home score and away score.
-3. For knockout ties, select who advances.
-4. Save result.
-5. Review ATG standings.
-6. Review World Cup group standings or bracket.
-7. Confirm audit log entry was created.
-
-### If a score was entered wrong
-
-1. Open Super Admin.
-2. Use Undo Last Score, or clear the specific result.
-3. Enter the correct score.
-4. Recalculate all.
-5. Check standings and bracket.
-
-## Local storage and sync
-
-The app uses Firebase for shared data and local storage as backup.
-
-If Firebase fails:
-
-- The page should still load
-- Local data may remain on one device only
-- Multi-device sync will not work until Firebase reconnects
-
-Use Reset Local Data only from Super Admin.
-
-Reset Local Data clears only the current browser’s local backup. It does not delete Firebase data.
-
-## Troubleshooting
-
-### Site does not update after GitHub upload
-
-Check:
-
-- `index.html` is at repository root
-- Footer shows the new build number
-- Browser cache was hard refreshed
-- GitHub Pages finished rebuilding
-- `.nojekyll` exists at root
-
-### Firebase failed to load
-
-Check:
-
-- The browser has internet access
-- Firebase scripts are not blocked by browser extensions
-- Firestore Database exists
-- Firestore rules were published
-- The Firebase project ID is `atg-world-cup-26`
-
-### Data does not show on second device
-
-Check:
-
-- Firebase status says connected
-- Both devices use the same GitHub Pages URL
-- Firestore rules are published
-- The first device saved successfully
-- The second device was refreshed after the save
-
-### Images do not load
-
-The logo and favicon are embedded directly in `index.html`.
-
-Flags use local PNG files from assets/flags. No flag emojis or external flag image host are used.
-
-The `assets` folder is included as backup.
-
-### Picks are visible too early
-
-Picks should only reveal after the lock time, which is 1 hour before kickoff.
-
-Before lock, public users see only:
-
-- Submitted count
-- Remaining count
-- Lock countdown
-
-A logged-in region can see only its own pick.
-
-### Knockout bracket does not advance
-
-Check:
-
-- Prior match has a saved score
-- Knockout tie has an advancement selection
-- Recalculate all was run if needed
-
-## Final check results
-
-Completed before this ZIP was created:
-
-- JavaScript syntax checked for `app.js`
-- JavaScript syntax checked for `schedule.js`
-- Required root files confirmed
-- GitHub Pages `.nojekyll` confirmed
-- Build marker updated
-- Cache-busting query strings updated
-- README rewritten
-- Logo and favicon checked as embedded data
-- Local PNG flag assets included in assets/flags
-- Firestore rules file included
-
-## Recommended minor updates during the event
-
-Keep changes small once the tournament starts.
-
-Safe event updates:
-
-- Score corrections
-- Text corrections
-- Style tweaks
-- Firebase rules review
-- Schedule time correction if FIFA changes a kickoff
-- Team name correction for knockout placeholder replacement
-
-Avoid major changes during the event:
-
-- Changing scoring logic
-- Changing Firestore document structure
-- Changing region IDs
-- Replacing schedule data format
-- Reworking bracket logic
-
-## Notes for future maintenance
-
-The most important files are:
-
-- `schedule.js` for match data
-- `app.js` for competition logic
-- `styles.css` for visual changes
-- `index.html` for page structure and Firebase script loading
-
-If the app breaks after a change, restore the last working ZIP and reapply only the needed update.
-
-## Flag Assets Update
-
-National flags are stored as local PNG files in `assets/flags/`.
-
-These PNG files were converted from the uploaded `svg.zip` source and mapped by each country in `app.js`.
-
-If a flag image fails to load, the app shows the country's three-letter FIFA code as the fallback.
-
-
-## Region colors
-
-No region uses gold. Gold is reserved for tournament branding, active tabs, awards, and major highlights.
-
-Current region colors:
-- Steve & Josh: Blue
-- Southeast: Green
-- Texas/West: Red
-- Midwest: Purple
-- Mid-Atlantic: Cyan
-- Interns: Pink
-
-
-## Device local time
-
-Match times are stored from the schedule in Eastern time. The public display converts each kickoff to the viewer's device time zone and uses h:mm AM/PM formatting.
-
-If the viewer is outside the Eastern time zone, the match card also shows the original Eastern kickoff time for reference.
-
-
-## Final region and time fixes
-
-- Texas/West includes Zarin, Gabriella, and Michelle.
-- Region color IDs use stable code keys, so Texas/West styling works on GitHub Pages and Firebase.
-- No region uses gold. Gold is reserved for branding, awards, active states, and highlights.
-- Match cards display kickoff times in the viewer's device time zone using h:mm AM/PM. When the viewer is outside Eastern time, the original Eastern time also displays.
-
-
-## Automatic score updates
-
-This build supports a three-phase score workflow.
-
-### Phase 1, Manual scoring remains primary
-
-Super Admin can still enter scores manually. This is the safest source of truth.
-
-### Phase 2, Score suggestions
-
-Super Admin can check a score feed from the Super Admin panel.
-
-Default feed path:
-
-```text
-score-feed.json
-```
-
-The feed can also point to an approved API endpoint or your own hosted JSON file.
-
-Expected JSON shape:
-
-```json
-{
-  "scores": [
-    {
-      "matchId": "1",
-      "homeScore": 2,
-      "awayScore": 1,
-      "status": "final",
-      "source": "Approved score source"
-    }
-  ]
+@media (max-width:560px){
+  .wc-card-top{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .date-pill,.match-pill{
+    white-space:normal;
+  }
+  .flag-panel{
+    min-height:170px;
+  }
+  .team-label-card{
+    width:78%;
+    min-height:92px;
+    padding:16px;
+  }
+  .team-label-card strong{
+    font-size:25px;
+  }
 }
-```
-
-Knockout penalty shootout example:
-
-```json
-{
-  "scores": [
-    {
-      "matchId": "75",
-      "homeScore": 1,
-      "awayScore": 1,
-      "homePens": 4,
-      "awayPens": 3,
-      "status": "final",
-      "source": "Approved score source"
-    }
-  ]
+.reveal-banner{
+  margin:0 22px 18px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(13,33,51,.9);
+  color:#f8fafc;
+  font-weight:800;
+  font-size:14px;
+  border:1px solid rgba(255,255,255,.16);
 }
-```
-
-### Phase 3, One-click approval
-
-Score suggestions do not update standings automatically. Super Admin must approve each suggestion.
-
-After approval:
-
-- ATG standings update.
-- World Cup group standings update.
-- Wildcard third-place cards update.
-- Knockout bracket advances.
-- Firebase sync saves the approved result.
-- Audit log records the change.
-
-### Penalty shootout scoring rule
-
-Penalty shootout goals are used only to determine the advancing team.
-
-They do not count toward:
-
-- Goals For
-- Goals Against
-- Goal Difference
-
-Example:
-
-```text
-France 2
-England 2
-France wins 4-3 on penalties
-```
-
-ATG scoring:
-
-- France pick is correct.
-- France receives 2 GF and 2 GA.
-- Penalty kicks do not add to GF or GA.
-
-
-## Pick Lock In countdown
-
-Match cards show a Pick Lock In countdown when the match lock time is inside the next 24 hours.
-
-Countdown colors:
-- More than 6 hours before lock: green
-- Under 6 hours before lock: yellow/gold
-- Under 1 hour before lock: red
-- Locked: black
-- Final: grey
-
-The countdown uses the match lock time, which is one hour before kickoff.
-
-
-### Pick lock example
-
-For a 3:00 PM kickoff, picks lock at 2:00 PM.
-
-The match card countdown begins showing at 2:00 PM the day before, because the pick lock deadline is then inside 24 hours.
-
-
-## GitHub Action score feed updates
-
-The project includes a GitHub Action that can update `score-feed.json` automatically.
-
-Files included:
-
-```text
-.github/workflows/update-score-feed.yml
-scripts/update-score-feed.js
-score-feed.json
-```
-
-The workflow runs every 10 minutes and can also be run manually from GitHub Actions.
-
-The app does not auto-apply scores. It only loads score suggestions. Super Admin must approve each suggestion before standings, group tables, wildcard cards, and the knockout bracket update.
-
-### Required GitHub Secrets
-
-Add these under Repository Settings > Secrets and variables > Actions.
-
-```text
-SCORE_API_PROVIDER
-SCORE_API_KEY
-SCORE_API_BASE_URL
-SCORE_API_COMPETITION_ID
-SCORE_API_SEASON
-```
-
-Supported provider values:
-
-```text
-football-data
-api-football
-custom
-manual
-```
-
-Use `manual` if you are not ready to connect a live API. The workflow will run and write an empty score feed.
-
-### Football-Data.org setup
-
-```text
-SCORE_API_PROVIDER=football-data
-SCORE_API_KEY=your_api_key
-SCORE_API_BASE_URL=https://api.football-data.org/v4
-SCORE_API_COMPETITION_ID=WC
-SCORE_API_SEASON=2026
-```
-
-### API-Football setup
-
-```text
-SCORE_API_PROVIDER=api-football
-SCORE_API_KEY=your_api_key
-SCORE_API_BASE_URL=https://v3.football.api-sports.io
-SCORE_API_COMPETITION_ID=your_world_cup_league_id
-SCORE_API_SEASON=2026
-```
-
-### Custom JSON endpoint setup
-
-```text
-SCORE_API_PROVIDER=custom
-SCORE_API_KEY=optional_bearer_token
-SCORE_API_BASE_URL=https://example.com/score-feed.json
-SCORE_API_COMPETITION_ID=
-SCORE_API_SEASON=2026
-```
-
-### Score approval workflow
-
-1. GitHub Action updates `score-feed.json`.
-2. Super Admin opens the site.
-3. Super Admin checks score suggestions.
-4. Super Admin approves or dismisses each suggestion.
-5. Firebase stores the approved result.
-6. Standings and brackets update.
-
-### Penalty shootouts
-
-The feed supports penalty shootouts for knockout matches.
-
-```json
-{
-  "matchId": "75",
-  "homeScore": 1,
-  "awayScore": 1,
-  "homePens": 4,
-  "awayPens": 3,
-  "status": "final",
-  "source": "approved score source"
+.reveal-banner.locked{
+  background:rgba(22,101,52,.92);
 }
-```
+.hidden-pick span:last-child{
+  color:var(--gold);
+  font-weight:900;
+}
 
-Penalty kicks determine the advancing team only. They do not count toward GF, GA, or GD.
+/* Added competition features */
+.light-theme{
+  --bg:#f5f7fb;
+  --panel:#ffffff;
+  --panel2:#eef4fb;
+  --text:#0b1624;
+  --muted:#506176;
+  --line:#d7e1ea;
+  background:#f5f7fb;
+  color:var(--text);
+}
+.light-theme body,.light-theme .hero{background:#f5f7fb;color:var(--text)}
+.light-theme .panel,.light-theme .admin-box,.light-theme .wc-card .pick-panel,.light-theme .wc-card .picks{background:#fff;color:var(--text)}
+.light-theme select,.light-theme input{background:#fff;color:var(--text)}
+.stage-badge{border-radius:999px;padding:10px 14px;font-weight:950;background:#102f49;color:#fff;border:1px solid rgba(255,255,255,.22);white-space:nowrap}.stage-group-stage{background:#0b4772}.stage-round-of-32{background:#155e75}.stage-round-of-16{background:#166534}.stage-quarter-finals{background:#854d0e}.stage-semi-finals{background:#991b1b}.stage-third-place{background:#581c87}.stage-final{background:#111827;color:#f4c95d}.region-row td:first-child{border-left:6px solid var(--region-color,#64748b)}.region-SteveJosh{--region-color:#2563eb}.region-Southeast{--region-color:#16a34a}.region-TexasWest{--region-color:#dc2626}.region-Midwest{--region-color:#7c3aed}.region-MidAtlantic{--region-color:#0891b2}.region-Interns{--region-color:#db2777}.pick-distribution{margin:0 22px 18px;padding:10px 12px;border-radius:12px;background:rgba(7,19,31,.85);color:#f8fafc;display:flex;gap:10px;flex-wrap:wrap;align-items:center}.q-badge{display:inline-grid;place-items:center;min-width:34px;border-radius:999px;padding:4px 8px;font-weight:950}.q-badge.qualified{background:rgba(65,211,125,.18);color:var(--green)}.q-badge.wildcard{background:rgba(98,182,255,.18);color:var(--blue)}.q-badge.eliminated{background:rgba(255,107,107,.18);color:var(--red)}.mini-table{min-width:0}.mini-table th,.mini-table td{padding:7px 8px}.bracket-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.bracket-stage{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;padding:14px}.bracket-stage h3{margin:0 0 12px;color:var(--gold)}.bracket-match{display:grid;grid-template-columns:52px 1fr auto 1fr;gap:8px;align-items:center;padding:10px;border-bottom:1px solid var(--line);font-size:13px}.bracket-match:last-child{border-bottom:0}.bracket-match em{font-style:normal;color:var(--gold);font-weight:950}.podium-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px}.podium-card{border:1px solid var(--line);border-top:6px solid var(--region-color,#64748b);border-radius:16px;background:rgba(255,255,255,.05);padding:18px;display:grid;gap:8px;text-align:center}.podium-card div{font-size:36px}.podium-card strong{font-size:22px}.profile-grid,.insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px}.profile-card,.insight-card{border:1px solid var(--line);border-left:6px solid var(--region-color,#64748b);border-radius:16px;background:rgba(255,255,255,.05);padding:16px}.profile-card h3,.insight-card h3{margin:0 0 8px;color:var(--gold)}.profile-card p,.insight-card p{margin:6px 0;color:var(--muted);font-weight:800}.profile-card strong{display:block;font-size:22px;margin:8px 0}.audit-box{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.05)}.audit-box h3{margin:0 0 10px;color:var(--gold)}.audit-line{display:grid;grid-template-columns:140px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.audit-line:last-child{border-bottom:0}.audit-line span{color:var(--muted);font-size:13px}.audit-line strong{font-size:13px}@media (max-width:760px){.tab-panel{grid-template-columns:1fr 1fr}.bracket-match{grid-template-columns:1fr}.stage-badge{width:100%;text-align:center}.audit-line{grid-template-columns:1fr}}
+
+.wildcard-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;grid-column:1/-1}.wildcard-advance-card{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:10px}.wildcard-advance-card h4{margin:0;color:var(--gold);font-size:18px}.wildcard-advance-card strong{display:grid;gap:4px;font-size:16px}.wildcard-advance-card strong span{font-size:12px;color:var(--muted);font-weight:800}.wildcard-seed{width:max-content;border-radius:999px;background:rgba(244,201,93,.16);border:1px solid rgba(244,201,93,.38);color:var(--gold);font-weight:950;padding:5px 9px;font-size:12px}.wildcard-advance-card ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}.wildcard-advance-card li{border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:7px 8px;color:var(--muted);font-weight:800}.wildcard-advance-card li.selected{background:rgba(65,211,125,.12);border-color:rgba(65,211,125,.35);color:var(--text)}.wildcard-advance-card li.used{opacity:.55}.wildcard-advance-card small{display:block;margin-top:2px;color:var(--muted);font-weight:750}
+
+.award-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.award-card{border:1px solid var(--line);background:var(--card);border-radius:18px;padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.award-card h3{margin:4px 0 10px;font-size:1rem}
+.award-card strong{display:block;font-size:1.25rem;margin-bottom:6px}
+.award-card p{margin:0;color:var(--muted);font-weight:700}
+.award-icon{font-size:1.8rem;display:inline-block}
+@media(max-width:760px){.award-grid{grid-template-columns:1fr}}
+
+/* Checked build fixes, award cards and group tabs */
+.group-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 16px;
+}
+.group-tab{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  border-radius:999px;
+  padding:9px 13px;
+  font-weight:900;
+  cursor:pointer;
+}
+.group-tab.active{
+  background:var(--gold);
+  color:#111827;
+  border-color:var(--gold);
+}
+.groups-grid.single-group{
+  display:block;
+}
+.groups-grid.single-group .group-card{
+  max-width:900px;
+}
+.group-table tr.eliminated td:first-child{
+  color:var(--red);
+}
+.group-table tr.wildcard td:first-child{
+  color:var(--blue);
+}
+.award-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.award-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:8px;
+  min-height:190px;
+  border-top:6px solid var(--region-color,#64748b);
+}
+.award-card.multi-award::after{
+  content:'🏆';
+  position:absolute;
+  top:10px;
+  right:12px;
+  font-size:20px;
+}
+.award-icon{
+  display:grid;
+  place-items:center;
+  min-height:58px;
+}
+.award-svg{
+  display:block;
+  width:54px;
+  height:54px;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.25));
+}
+.award-emoji{
+  display:grid;
+  place-items:center;
+  width:54px;
+  height:54px;
+  border-radius:50%;
+  background:rgba(244,201,93,.16);
+  border:1px solid rgba(244,201,93,.42);
+  font-size:34px;
+}
+.award-card h3{
+  margin:0;
+  color:var(--gold);
+}
+.award-card strong{
+  margin:0;
+}
+.award-card p{
+  margin:0;
+}
+@media(max-width:980px){
+  .award-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:620px){
+  .award-grid{grid-template-columns:1fr;}
+  .group-tabs{display:grid;grid-template-columns:repeat(3,1fr);}
+  .group-tab{padding:9px 8px;font-size:13px;}
+}
+
+.form-icons{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+}
+.form-icon{
+  width:24px;
+  height:24px;
+  border-radius:999px;
+  display:inline-block;
+  font-weight:950;
+  font-size:12px;
+  line-height:1;
+}
+.form-icon.win{
+  background:#16a34a;
+  color:#ffffff;
+}
+.form-icon.draw{
+  background:#d1d5db;
+  color:#000000;
+}
+.form-icon.loss{
+  background:#dc2626;
+  color:#ffffff;
+}
+.form-empty{
+  color:var(--muted);
+  font-weight:950;
+}
+.move-cell{
+  font-weight:950;
+  text-align:center;
+  white-space:nowrap;
+}
+
+/* Simple match card update */
+.match-day-group{display:grid;gap:12px;margin-bottom:18px}.match-day-group>h3{margin:8px 2px;color:var(--gold);font-size:18px;text-transform:uppercase;letter-spacing:.08em}.match-day-list{display:grid;gap:14px}.simple-match-card{background:rgba(16,43,67,.96);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.2)}.simple-match-card.is-final{opacity:.96}.simple-match-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--line);background:#081929}.match-number{font-weight:950;color:var(--gold);text-transform:uppercase;letter-spacing:.04em}.status-pill{margin-left:auto;border-radius:999px;padding:7px 12px;font-weight:950;font-size:12px;text-transform:uppercase;letter-spacing:.06em}.status-pill.open{background:rgba(65,211,125,.16);color:var(--green)}.status-pill.soon{background:rgba(244,201,93,.18);color:var(--gold)}.status-pill.locked{background:rgba(98,182,255,.18);color:var(--blue)}.status-pill.final{background:rgba(255,255,255,.14);color:#fff}.simple-teams{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;padding:18px 16px 10px}.simple-team{display:flex;align-items:center;gap:12px;min-width:0;font-size:clamp(20px,3vw,32px);font-weight:950}.simple-team:last-child{justify-content:flex-end;text-align:right}.simple-team .flag-small{width:60px;height:40px;border-radius:6px;margin:0;box-shadow:0 0 0 1px rgba(255,255,255,.26)}.simple-team strong{overflow:hidden;text-overflow:ellipsis}.simple-vs{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#111827;font-weight:950;font-size:13px}.simple-score{text-align:center;display:grid;gap:3px;padding:0 16px 12px;color:#fff;font-size:30px;font-weight:950}.simple-score span{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.08em}.simple-details{display:flex;gap:10px;flex-wrap:wrap;padding:0 16px 14px;color:var(--muted);font-weight:800}.simple-details span{border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:999px;padding:7px 10px}.simple-match-card .lock-countdown{margin:0 16px 12px}.simple-reveal{margin:0 16px 12px;padding:9px 10px;border-radius:12px;background:rgba(244,201,93,.11);border:1px solid rgba(244,201,93,.25);color:#ffeab0;font-weight:850}.simple-match-card .pick-panel{padding:12px 16px;background:rgba(7,19,31,.42)}.simple-picks{padding:12px 16px;background:#0d2133}.simple-submit-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--muted);font-weight:850}.simple-submit-row strong{color:#fff}.pick-chip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.pick-chip{border:1px solid var(--line);border-radius:12px;padding:9px 10px;display:grid;gap:2px;background:rgba(255,255,255,.04);color:var(--muted)}.pick-chip span{font-size:12px;text-transform:uppercase;letter-spacing:.06em}.pick-chip strong{color:#fff}.pick-chip.correct{border-color:rgba(65,211,125,.55);background:rgba(65,211,125,.12)}.pick-chip.correct strong{color:var(--green)}.pick-chip.wrong{border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.1)}.pick-chip.wrong strong{color:var(--red)}.pick-chip.draw{border-color:rgba(244,201,93,.5);background:rgba(244,201,93,.1)}.pick-chip.draw strong{color:var(--gold)}.simple-match-card .pick-distribution{margin:10px 0 0;background:rgba(255,255,255,.04)}@media (max-width:700px){.simple-match-head{align-items:flex-start}.status-pill{margin-left:0}.simple-teams{grid-template-columns:1fr;gap:8px}.simple-team,.simple-team:last-child{justify-content:flex-start;text-align:left}.simple-vs{width:auto;height:auto;border-radius:10px;padding:8px 10px}.simple-details{display:grid}.simple-team .flag-small{width:48px;height:32px}}
 
 
-### Football-data 404 note
+/* Simple World Cup Groups update */
+.groups-panel .section-title{margin-bottom:12px}
+.groups-grid.single-group{display:block}
+.simple-group-card{max-width:980px;margin:0 auto}
+.simple-group-table{min-width:560px}
+.simple-group-table th,.simple-group-table td{text-align:center}
+.simple-group-table th:first-child,.simple-group-table td:first-child{text-align:left}
+.group-summary-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px;border-top:1px solid var(--line)}
+.group-summary-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(255,255,255,.05);display:grid;gap:8px;text-align:center}
+.group-summary-card span{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:950}
+.group-summary-card strong{font-size:17px;color:#fff}
+.group-summary-card.qualified{border-color:rgba(65,211,125,.35)}
+.group-summary-card.wildcard{border-color:rgba(98,182,255,.38)}
+.group-summary-card.eliminated{border-color:rgba(255,107,107,.35)}
+.tie-break-details{margin:0 14px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(7,19,31,.38);padding:10px 12px}
+.tie-break-details summary{cursor:pointer;font-weight:950;color:var(--gold)}
+.tie-break-details p{margin:8px 0 0;color:var(--muted);font-weight:800}
+.group-table small{display:inline-block;margin-left:6px;color:var(--muted);font-weight:900}
+.qualifier-box>.meta{margin-top:-6px;margin-bottom:14px}
+.wildcard-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.wildcard-advance-card strong{display:block;margin:8px 0 10px}
+@media (max-width:760px){.group-summary-cards{grid-template-columns:1fr}.simple-group-table{min-width:500px}.group-table small{display:block;margin-left:0;margin-top:4px}}
 
-If the workflow log says the API endpoint is not available yet, the workflow now stays green and writes an empty score-feed.json.
+/* Knockout bracket chart update */
+.bracket-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}.bracket-tab{background:#102f49;color:var(--text);border:1px solid var(--line);padding:9px 12px;border-radius:999px}.bracket-tab.active{background:var(--gold);color:#111827}.champion-card{margin-bottom:16px}.champion-placeholder,.champion-inner{border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.05);padding:16px;text-align:center;color:var(--muted);font-weight:800}.champion-inner{display:grid;gap:8px;color:var(--text)}.champion-inner span{color:var(--gold);font-weight:950;text-transform:uppercase;letter-spacing:1px}.champion-inner strong{font-size:28px;display:flex;align-items:center;justify-content:center;gap:10px}.champion-inner em{font-style:normal;color:var(--muted)}.bracket-chart{display:grid;grid-template-columns:repeat(6,minmax(220px,1fr));gap:14px;align-items:start;overflow-x:auto;padding-bottom:8px}.bracket-chart.single-round{grid-template-columns:repeat(auto-fit,minmax(260px,360px))}.bracket-round{min-width:220px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:12px}.bracket-round h3{margin:0 0 12px;color:var(--gold);font-size:16px;text-align:center}.bracket-round-list{display:grid;gap:10px}.bracket-card{position:relative;border:1px solid var(--line);border-radius:14px;background:#081929;padding:10px;display:grid;gap:8px}.bracket-card.complete{border-color:rgba(65,211,125,.42)}.bracket-card.needs-winner{border-color:rgba(244,201,93,.55)}.bracket-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-weight:900;font-size:12px}.bracket-card-head small{color:var(--gold);font-weight:900}.bracket-team{display:grid;grid-template-columns:28px 1fr 34px;align-items:center;gap:8px;padding:8px;border-radius:10px;background:rgba(255,255,255,.04)}.bracket-team strong{font-size:13px}.bracket-team span:last-child{text-align:right;color:var(--muted);font-weight:950}.bracket-team.winner{background:rgba(65,211,125,.15);outline:1px solid rgba(65,211,125,.45)}.bracket-team.winner span:last-child{color:var(--green)}.bracket-footer{display:grid;gap:4px;color:var(--muted);font-size:12px;font-weight:800}.bracket-status{color:var(--gold)}
+@media (max-width:900px){.bracket-chart{grid-template-columns:1fr;overflow-x:visible}.bracket-round{min-width:0}.champion-inner strong{font-size:22px}}
 
-That means the API key works, but football-data.org has not returned a usable World Cup 2026 matches feed for this endpoint yet.
+/* Simple Competition Insights */
+#competitionInsights.insight-grid{
+  display:block;
+}
+.insight-top-row{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:16px;
+}
+.top-insight-card,
+.insight-panel{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.05);
+  border-radius:18px;
+  padding:16px;
+  box-shadow:var(--shadow);
+}
+.top-insight-card{
+  display:grid;
+  gap:8px;
+  min-height:120px;
+}
+.top-insight-card span{
+  color:var(--muted);
+  font-size:12px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.top-insight-card strong{
+  color:var(--gold);
+  font-size:clamp(20px,3vw,28px);
+  line-height:1.05;
+}
+.top-insight-card p{
+  margin:0;
+  color:var(--text);
+  font-weight:850;
+}
+.simple-insight-layout{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.insight-panel h3{
+  margin:0 0 12px;
+  color:var(--gold);
+}
+.insight-match-title{
+  margin:0 0 12px;
+  color:var(--text);
+  font-weight:950;
+}
+.submitted-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid rgba(244,201,93,.34);
+  background:rgba(244,201,93,.12);
+  color:var(--gold);
+  border-radius:999px;
+  padding:9px 12px;
+  margin-bottom:10px;
+}
+.submitted-pill span{
+  color:var(--muted);
+  font-weight:850;
+}
+.trend-bars{
+  display:grid;
+  gap:10px;
+}
+.trend-bar{
+  display:grid;
+  gap:7px;
+}
+.trend-bar div{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-weight:900;
+}
+.trend-bar span{
+  color:var(--gold);
+}
+.trend-bar i{
+  display:block;
+  height:10px;
+  min-width:8px;
+  border-radius:999px;
+  background:var(--gold);
+}
+.spotlight-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:12px;
+}
+.spotlight-tab{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  border-radius:999px;
+  padding:8px 10px;
+  font-weight:900;
+  cursor:pointer;
+}
+.spotlight-tab.active{
+  background:var(--gold);
+  color:#111827;
+  border-color:var(--gold);
+}
+.spotlight-card{
+  border:1px solid var(--line);
+  border-left:6px solid var(--region-color,#64748b);
+  border-radius:16px;
+  padding:14px;
+  background:rgba(255,255,255,.04);
+}
+.spotlight-card strong{
+  display:block;
+  font-size:24px;
+  margin-bottom:4px;
+}
+.spotlight-card p{
+  margin:0 0 12px;
+  color:var(--muted);
+  font-weight:800;
+}
+.spotlight-stats{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:12px;
+}
+.spotlight-stats span{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+  display:grid;
+  gap:4px;
+  font-weight:950;
+  text-align:center;
+}
+.spotlight-stats small{
+  color:var(--muted);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.spotlight-form{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.spotlight-form > span:last-child{
+  color:var(--muted);
+  font-weight:900;
+}
+.award-race-list{
+  display:grid;
+  gap:10px;
+}
+.award-race-list div{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:11px 12px;
+  display:grid;
+  grid-template-columns:1fr 1fr auto;
+  gap:10px;
+  align-items:center;
+  background:rgba(255,255,255,.04);
+}
+.award-race-list span{
+  color:var(--muted);
+  font-weight:900;
+}
+.award-race-list strong{
+  color:var(--text);
+}
+.award-race-list em{
+  font-style:normal;
+  color:var(--gold);
+  font-weight:950;
+}
+.upset-watch-panel p{
+  margin:8px 0;
+  color:var(--muted);
+  font-weight:800;
+}
+.upset-watch-panel strong{
+  color:var(--text);
+}
+@media(max-width:900px){
+  .insight-top-row,
+  .simple-insight-layout{
+    grid-template-columns:1fr;
+  }
+  .spotlight-stats{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .award-race-list div{
+    grid-template-columns:1fr;
+  }
+}
 
-The site still works normally. Manual score entry remains the fallback until the API starts returning score data.
+/* Group standings full columns */
+.simple-group-table{min-width:880px;}
+.group-form-icons{justify-content:center;}
+
+/* Clean Super Admin update */
+.admin-box{max-height:88vh;overflow:auto}
+.admin-health-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0 16px}
+.admin-health-card{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:4px}
+.admin-health-card span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+.admin-health-card strong{font-size:16px;color:var(--text)}
+.admin-section{border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0;background:rgba(255,255,255,.03)}
+.admin-section h3{margin:0 0 6px;color:var(--gold)}
+.admin-list{display:grid;gap:8px;margin-top:10px}
+.clean-admin-row{grid-template-columns:56px minmax(220px,1fr) 72px 72px minmax(150px,210px) auto auto;border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(7,23,37,.6)}
+.clean-admin-row input,.clean-admin-row select{padding:9px;border-radius:10px}
+.lock-only-row{grid-template-columns:56px minmax(220px,1fr) auto}
+.admin-warning{grid-column:1/-1;color:var(--red);font-weight:900}
+.admin-completed-line{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(7,23,37,.45)}
+.clean-admin-actions{justify-content:flex-start}
+.audit-box{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
+@media (max-width:900px){.clean-admin-row,.lock-only-row{grid-template-columns:1fr 1fr}.clean-admin-row>div:first-child,.clean-admin-row .game-title,.admin-warning,.lock-only-row>div:first-child,.lock-only-row .game-title{grid-column:1/-1}.clean-admin-row select{grid-column:1/-1}.admin-completed-line{display:grid}}
+
+/* Clean tournament clock */
+.countdown-panel{
+  text-align:center;
+  align-items:center;
+  justify-items:center;
+  padding:20px 18px;
+}
+.clock-top-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.clock-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:7px 11px;
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.14);
+}
+.clock-status.pre{background:rgba(244,201,93,.16);color:var(--gold);border-color:rgba(244,201,93,.28)}
+.clock-status.live{background:rgba(65,211,125,.14);color:var(--green);border-color:rgba(65,211,125,.28)}
+.clock-status.final{background:rgba(98,182,255,.16);color:var(--blue);border-color:rgba(98,182,255,.28)}
+.clock-status.complete{background:rgba(244,201,93,.2);color:var(--gold);border-color:rgba(244,201,93,.4)}
+.clock-status.bad{background:rgba(255,107,107,.14);color:var(--red);border-color:rgba(255,107,107,.3)}
+.clock-detail{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:800;
+}
+.countdown-panel h2{
+  margin:0;
+}
+
+
+/* Simple match filter buttons */
+.filter-panel{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+}
+.filter-section{
+  display:grid;
+  gap:10px;
+}
+.filter-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  color:var(--muted);
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:12px;
+}
+.filter-button-row{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:4px;
+  scrollbar-width:thin;
+}
+.filter-chip{
+  flex:0 0 auto;
+  background:transparent;
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:9px 12px;
+  font-size:13px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.filter-chip.active{
+  background:var(--gold);
+  color:#111827;
+  border-color:var(--gold);
+}
+.date-filter-chip{
+  min-width:74px;
+}
+@media (max-width:760px){
+  .filter-panel{gap:14px;}
+  .filter-button-row{margin-inline:-2px;padding-inline:2px;}
+}
+
+/* Logo style refresh */
+:root{
+  --silver:#d8dde6;
+  --white-card:#f8fafc;
+  --navy:#06192a;
+}
+body{
+  background:
+    radial-gradient(circle at 18% 0%,rgba(32,93,139,.35),transparent 28%),
+    linear-gradient(180deg,#040c17,#08192a 48%,#06111d);
+}
+.branded-hero{
+  justify-content:center;
+  padding:28px 22px 22px;
+  background:
+    radial-gradient(circle at center top,rgba(20,72,112,.9),rgba(6,19,31,.92) 45%,rgba(4,12,23,.98)),
+    #06131f;
+  border-bottom:1px solid rgba(216,221,230,.22);
+}
+.hero-brand{
+  width:min(1180px,100%);
+  display:grid;
+  place-items:center;
+  text-align:center;
+  gap:12px;
+}
+.brand-logo{
+  width:min(280px,62vw);
+  height:auto;
+  display:block;
+  border-radius:22px;
+  box-shadow:0 18px 45px rgba(0,0,0,.36);
+  border:1px solid rgba(216,221,230,.28);
+}
+.hero-copy h1{
+  font-size:clamp(30px,5vw,58px);
+}
+.hero-copy .sub{
+  color:#d8dde6;
+}
+.panel{
+  border-color:rgba(216,221,230,.18);
+  box-shadow:0 14px 36px rgba(0,0,0,.22);
+}
+.tab-btn.active,
+.filter-chip.active,
+.group-tab.active,
+.bracket-tab.active,
+.spotlight-tab.active,
+button:not(.ghost):not(.tab-btn):not(.filter-chip):not(.group-tab):not(.bracket-tab):not(.spotlight-tab):not(.pick-btn){
+  background:linear-gradient(180deg,#f8d978,#d8a92d);
+  color:#08111f;
+}
+button.ghost{
+  border-color:rgba(216,221,230,.28);
+}
+.simple-match-card,
+.award-card,
+.group-card,
+.insight-panel,
+.top-insight-card,
+.bracket-round,
+.admin-section,
+.audit-box{
+  border-top:4px solid rgba(244,201,93,.8);
+}
+.simple-match-head,
+.card-head{
+  background:linear-gradient(90deg,#06192a,#0b3558);
+}
+.status-pill.open,
+.clock-status.live{
+  border-color:rgba(65,211,125,.34);
+}
+.countdown-panel{
+  background:
+    linear-gradient(135deg,rgba(6,25,42,.96),rgba(11,53,88,.9)),
+    var(--panel);
+  border-color:rgba(216,221,230,.22);
+}
+.countdown-large{
+  color:#ffffff;
+  text-shadow:0 8px 28px rgba(0,0,0,.35);
+}
+.award-card{
+  background:rgba(255,255,255,.055);
+}
+.table-wrap{
+  border-radius:14px;
+  border:1px solid rgba(216,221,230,.12);
+}
+th{
+  color:#d8dde6;
+}
+footer{
+  border-top:1px solid rgba(216,221,230,.12);
+}
+@media (max-width:760px){
+  .branded-hero{padding:22px 16px 18px;}
+  .brand-logo{width:min(190px,70vw);border-radius:18px;}
+  .hero-copy h1{letter-spacing:-1px;}
+}
+
+
+.flag-img{
+  display:inline-block;
+  object-fit:contain;
+  background:#fff;
+}
+.bracket-team .flag-img,.game-title .flag-img,.group-table .flag-img,.mini-table .flag-img{width:30px;height:20px;border-radius:3px;vertical-align:middle;margin-right:6px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+
+.flag-code{
+  display:inline-grid;
+  place-items:center;
+  background:#f4c95d;
+  color:#081929;
+  border:1px solid rgba(255,255,255,.38);
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.04em;
+  line-height:1;
+  text-align:center;
+}
+.simple-team .flag-code{
+  width:54px;
+  height:36px;
+  font-size:12px;
+  border-radius:6px;
+  margin:0;
+}
+.bracket-team .flag-code,.game-title .flag-code,.group-table .flag-code,.mini-table .flag-code{
+  width:30px;
+  height:20px;
+  border-radius:3px;
+  vertical-align:middle;
+  margin-right:6px;
+  font-size:8px;
+}
+
+
+/* Region colors, no region uses gold */
+.region-color-steve-josh{--region-color:#2563eb;}
+.region-color-southeast{--region-color:#16a34a;}
+.region-color-texas-west{--region-color:#dc2626;}
+.region-color-midwest{--region-color:#7c3aed;}
+.region-color-mid-atlantic{--region-color:#0891b2;}
+.region-color-interns{--region-color:#db2777;}
+
+.region-chip,
+.pick-chip,
+.region-profile,
+.spotlight-card{
+  border-left-color:var(--region-color, var(--line));
+}
+
+.region-dot{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  display:inline-block;
+  background:var(--region-color, #94a3b8);
+  margin-right:6px;
+}
+
+
+.simple-details small,
+.match-time-note{
+  display:block;
+  margin-top:2px;
+  color:rgba(255,255,255,.68);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:0;
+  text-transform:none;
+}
+
+
+.score-feed-controls{
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) auto;
+  gap:12px;
+  align-items:end;
+  margin:12px 0;
+}
+.score-feed-controls label{
+  display:grid;
+  gap:6px;
+  color:var(--muted);
+  font-weight:850;
+}
+.score-feed-controls input{
+  width:100%;
+}
+.score-suggestion-row{
+  border-left:4px solid var(--blue);
+}
+.score-suggestion-row.muted-row{
+  opacity:.72;
+}
+.suggested-score{
+  display:grid;
+  gap:2px;
+  text-align:center;
+  color:var(--text);
+}
+.suggested-score strong{
+  font-size:20px;
+  color:var(--gold);
+}
+.suggested-score span{
+  color:var(--muted);
+  font-size:12px;
+}
+.score-suggestion-pill{
+  display:inline-flex;
+  align-items:center;
+  margin-left:8px;
+  border:1px solid rgba(244,201,93,.45);
+  background:rgba(244,201,93,.12);
+  color:var(--gold);
+  border-radius:999px;
+  padding:2px 7px;
+  font-size:11px;
+  font-weight:950;
+}
+.simple-score small{
+  display:block;
+  color:var(--muted);
+  font-size:13px;
+  margin-top:2px;
+}
+@media (max-width:760px){
+  .score-feed-controls{
+    grid-template-columns:1fr;
+  }
+}
