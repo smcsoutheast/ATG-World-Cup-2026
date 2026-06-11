@@ -1,7 +1,8 @@
-{
-  "updatedAt": "2026-06-11T23:00:00Z",
-  "provider": "manual",
-  "mode": "suggestions_only",
-  "note": "Super Admin must approve these suggestions before standings update.",
-  "scores": []
-}
+window.ATG_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBzQRQIQ7gqRuFV_64oUMbApIQSRcnjcnk",
+  authDomain: "atg-world-cup-26.firebaseapp.com",
+  projectId: "atg-world-cup-26",
+  storageBucket: "atg-world-cup-26.firebasestorage.app",
+  messagingSenderId: "506347323919",
+  appId: "1:506347323919:web:e92bdd07905073797c597a"
+};

@@ -1,8 +1,1 @@
-window.ATG_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBzQRQIQ7gqRuFV_64oUMbApIQSRcnjcnk",
-  authDomain: "atg-world-cup-26.firebaseapp.com",
-  projectId: "atg-world-cup-26",
-  storageBucket: "atg-world-cup-26.firebasestorage.app",
-  messagingSenderId: "506347323919",
-  appId: "1:506347323919:web:e92bdd07905073797c597a"
-};
+Country flag PNG files converted from the uploaded svg.zip file. Filenames match the ISO asset codes used by app.js. If an image cannot load, the app displays the country FIFA three-letter code as text fallback.
