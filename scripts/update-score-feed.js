@@ -5,10 +5,10 @@ const ROOT = process.cwd();
 const SCHEDULE_FILE = path.join(ROOT, "schedule.js");
 const FEED_FILE = path.join(ROOT, "score-feed.json");
 
-const provider = (process.env.SCORE_API_PROVIDER || "manual").toLowerCase();
-const apiKey = process.env.SCORE_API_KEY || "";
-const baseUrl = process.env.SCORE_API_BASE_URL || "";
-const competitionId = process.env.SCORE_API_COMPETITION_ID || "";
+const provider = (process.env.SCORE_API_PROVIDER || "football-data").toLowerCase();
+const apiKey = process.env.SCORE_API_KEY || "89ebc5a856be4b84919297903b357b25";
+const baseUrl = process.env.SCORE_API_BASE_URL || "https://api.football-data.org/v4";
+const competitionId = process.env.SCORE_API_COMPETITION_ID || "WC";
 const season = process.env.SCORE_API_SEASON || "2026";
 
 function readSchedule() {
