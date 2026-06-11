@@ -5,7 +5,7 @@ const ROOT = process.cwd();
 const SCHEDULE_FILE = path.join(ROOT, "schedule.js");
 const FEED_FILE = path.join(ROOT, "score-feed.json");
 
-const provider = (process.env.SCORE_API_PROVIDER || "manuel").toLowerCase();
+const provider = (process.env.SCORE_API_PROVIDER || "manual").toLowerCase();
 const apiKey = process.env.SCORE_API_KEY || "";
 const baseUrl = process.env.SCORE_API_BASE_URL || "";
 const competitionId = process.env.SCORE_API_COMPETITION_ID || "";
