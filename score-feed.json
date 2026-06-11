@@ -1,13 +1,7 @@
 {
   "updatedAt": "2026-06-11T23:00:00Z",
-  "notes": "Optional score suggestion feed. Super Admin must approve each score before it changes the competition.",
-  "scores": [
-    {
-      "matchId": "1",
-      "homeScore": 0,
-      "awayScore": 0,
-      "status": "example",
-      "source": "score-feed.json example"
-    }
-  ]
+  "provider": "manual",
+  "mode": "suggestions_only",
+  "note": "Super Admin must approve these suggestions before standings update.",
+  "scores": []
 }

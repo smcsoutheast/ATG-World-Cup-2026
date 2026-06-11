@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-match-card-spacing-fix`
+Build: `20260602-score-feed-workflow`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-match-card-spacing-fix`.
+6. Confirm the footer shows `Build 20260602-score-feed-workflow`.
 
 Hard refresh tips:
 
@@ -631,3 +631,100 @@ The countdown uses the match lock time, which is one hour before kickoff.
 For a 3:00 PM kickoff, picks lock at 2:00 PM.
 
 The match card countdown begins showing at 2:00 PM the day before, because the pick lock deadline is then inside 24 hours.
+
+
+## GitHub Action score feed updates
+
+The project includes a GitHub Action that can update `score-feed.json` automatically.
+
+Files included:
+
+```text
+.github/workflows/update-score-feed.yml
+scripts/update-score-feed.js
+score-feed.json
+```
+
+The workflow runs every 10 minutes and can also be run manually from GitHub Actions.
+
+The app does not auto-apply scores. It only loads score suggestions. Super Admin must approve each suggestion before standings, group tables, wildcard cards, and the knockout bracket update.
+
+### Required GitHub Secrets
+
+Add these under Repository Settings > Secrets and variables > Actions.
+
+```text
+SCORE_API_PROVIDER
+SCORE_API_KEY
+SCORE_API_BASE_URL
+SCORE_API_COMPETITION_ID
+SCORE_API_SEASON
+```
+
+Supported provider values:
+
+```text
+football-data
+api-football
+custom
+manual
+```
+
+Use `manual` if you are not ready to connect a live API. The workflow will run and write an empty score feed.
+
+### Football-Data.org setup
+
+```text
+SCORE_API_PROVIDER=football-data
+SCORE_API_KEY=your_api_key
+SCORE_API_BASE_URL=https://api.football-data.org/v4
+SCORE_API_COMPETITION_ID=WC
+SCORE_API_SEASON=2026
+```
+
+### API-Football setup
+
+```text
+SCORE_API_PROVIDER=api-football
+SCORE_API_KEY=your_api_key
+SCORE_API_BASE_URL=https://v3.football.api-sports.io
+SCORE_API_COMPETITION_ID=your_world_cup_league_id
+SCORE_API_SEASON=2026
+```
+
+### Custom JSON endpoint setup
+
+```text
+SCORE_API_PROVIDER=custom
+SCORE_API_KEY=optional_bearer_token
+SCORE_API_BASE_URL=https://example.com/score-feed.json
+SCORE_API_COMPETITION_ID=
+SCORE_API_SEASON=2026
+```
+
+### Score approval workflow
+
+1. GitHub Action updates `score-feed.json`.
+2. Super Admin opens the site.
+3. Super Admin checks score suggestions.
+4. Super Admin approves or dismisses each suggestion.
+5. Firebase stores the approved result.
+6. Standings and brackets update.
+
+### Penalty shootouts
+
+The feed supports penalty shootouts for knockout matches.
+
+```json
+{
+  "matchId": "75",
+  "homeScore": 1,
+  "awayScore": 1,
+  "homePens": 4,
+  "awayPens": 3,
+  "status": "final",
+  "source": "approved score source"
+}
+```
+
+Penalty kicks determine the advancing team only. They do not count toward GF, GA, or GD.
