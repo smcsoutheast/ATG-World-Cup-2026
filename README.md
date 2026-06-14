@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-match-card-spacing-fix`
+Build: `20260602-lock-override-relock-fix`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-match-card-spacing-fix`.
+6. Confirm the footer shows `Build 20260602-lock-override-relock-fix`.
 
 Hard refresh tips:
 
@@ -631,3 +631,15 @@ The countdown uses the match lock time, which is one hour before kickoff.
 For a 3:00 PM kickoff, picks lock at 2:00 PM.
 
 The match card countdown begins showing at 2:00 PM the day before, because the pick lock deadline is then inside 24 hours.
+
+
+### Lock override relock fix
+
+Super Admin lock controls now return matches to normal lock timing when an override is removed.
+
+Behavior:
+- Time-locked match with no override: button shows Unlock Override.
+- Admin-unlocked match: button shows Relock Match.
+- Relock Match removes the unlock override, so the match immediately locks again if its lock time has passed.
+- Admin-locked future match: button shows Remove Lock Override.
+- The Locks panel includes active overrides so they can be reversed.

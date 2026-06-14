@@ -867,7 +867,7 @@ function matchStatus(m, locked, res){
     const todayKey = new Date().toISOString().slice(0,10);
     const needingScores = all.filter(m => !hasScore(m) && (m.date === todayKey || kickoffDate(m).getTime() <= now || isPickLocked(m))).slice(0,16);
     const scoreRows = (needingScores.length ? needingScores : all.slice(0,16)).map(adminScoreRow).join('');
-    const lockedRows = all.filter(m => isPickLocked(m) && !hasScore(m)).slice(0,10).map(adminLockRow).join('') || '<p class="meta">No locked matches need scores.</p>';
+    const lockedRows = all.filter(m => !hasScore(m) && (isPickLocked(m) || state.lockOverrides?.[m.id])).slice(0,14).map(adminLockRow).join('') || '<p class="meta">No lock overrides or locked matches need attention.</p>';
     const completedRows = all.filter(hasScore).slice(-12).reverse().map(adminCompletedRow).join('') || '<p class="meta">No completed matches yet.</p>';
     const lastSync = state.updatedAt ? prettyTimestamp(state.updatedAt) : 'Not synced yet';
     const firebaseText = firebaseReady ? 'Firebase connected' : 'Local mode';
@@ -1103,7 +1103,10 @@ function clearScore(id){
     const kick = kickoffDate(m).getTime();
     const lock = lockDate(m).getTime();
     const lockMs = lock - now;
+    const override = state.lockOverrides?.[m.id];
     if(hasScore(m)) return { show:true, cls:'lock-final', label:'Final', value:'Final' };
+    if(override === 'locked') return { show:true, cls:'lock-locked', label:'Picks Locked', value:'🔒 Admin Locked' };
+    if(override === 'unlocked') return { show:true, cls:'lock-gold', label:'Admin Override', value:'Picks Open' };
     if(now >= lock) return { show:true, cls:'lock-locked', label:'Picks Locked', value:'🔒 Picks Locked' };
     if(lockMs > 24 * 60 * 60 * 1000) return { show:false, cls:'', label:'', value:'' };
     if(lockMs <= 60 * 60 * 1000) return { show:true, cls:'lock-red', label:'Pick Lock In', value:formatDuration(lockMs) };
@@ -1305,16 +1308,34 @@ function clearScore(id){
     return `<div class="pick-distribution"><strong>Pick Distribution</strong><span>${parts.join(' · ')}</span></div>`;
   }
   function lockOverrideLabel(id){
+    const m = matches().find(x => String(x.id) === String(id));
     const v = state.lockOverrides?.[id];
-    if(v === 'locked') return 'Unlock Override';
-    if(v === 'unlocked') return 'Lock Override';
-    return 'Lock Override';
+
+    if(v === 'unlocked') return 'Relock Match';
+    if(v === 'locked') return 'Remove Lock Override';
+
+    return m && Date.now() >= lockDate(m).getTime() ? 'Unlock Override' : 'Lock Override';
   }
+
   function toggleLock(id){
     state.lockOverrides = state.lockOverrides || {};
+    const m = matches().find(x => String(x.id) === String(id));
     const cur = state.lockOverrides[id];
-    state.lockOverrides[id] = cur === 'locked' ? 'unlocked' : 'locked';
-    addAudit(`Super Admin set Match ${id} to ${state.lockOverrides[id]}`);
+
+    if(cur === 'unlocked'){
+      delete state.lockOverrides[id];
+      addAudit(`Super Admin removed unlock override for Match ${id}. Match returned to normal lock timing.`);
+    } else if(cur === 'locked'){
+      delete state.lockOverrides[id];
+      addAudit(`Super Admin removed lock override for Match ${id}. Match returned to normal lock timing.`);
+    } else if(m && Date.now() >= lockDate(m).getTime()){
+      state.lockOverrides[id] = 'unlocked';
+      addAudit(`Super Admin unlocked Match ${id}`);
+    } else {
+      state.lockOverrides[id] = 'locked';
+      addAudit(`Super Admin locked Match ${id}`);
+    }
+
     saveState(); renderAll(); renderAdmin();
   }
   function undoLastScore(){
