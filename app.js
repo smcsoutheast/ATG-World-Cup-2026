@@ -628,7 +628,8 @@
 
   function cardHtml(m){
     const res = resultFor(m);
-    const locked = isPickLocked(m);
+    const final = hasScore(m);
+    const locked = final || isPickLocked(m);
     const current = activeRegion ? state.picks[activeRegion]?.[m.id] : null;
     const submitted = REGIONS.filter(r => !!state.picks[r.id]?.[m.id]).length;
     const remaining = REGIONS.length - submitted;
@@ -843,6 +844,9 @@ function matchStatus(m, locked, res){
     state.scoreHistory.push({ id, prior, priorAdvancer, at:new Date().toISOString() });
     state.scoreHistory = state.scoreHistory.slice(-25);
     state.scores[id] = { homeScore:Number(homeScore), awayScore:Number(awayScore) };
+    if(state.lockOverrides && state.lockOverrides[id]){
+      delete state.lockOverrides[id];
+    }
     if(penHome !== '' || penAway !== ''){
       state.scores[id].homePens = penHome === '' ? '' : Number(penHome);
       state.scores[id].awayPens = penAway === '' ? '' : Number(penAway);
@@ -1093,6 +1097,7 @@ function clearScore(id){
   }
 
   function isPickLocked(m){
+    if(hasScore(m)) return true;
     if(state.lockOverrides && state.lockOverrides[m.id] === 'unlocked') return false;
     if(state.lockOverrides && state.lockOverrides[m.id] === 'locked') return true;
     return Date.now() >= lockDate(m).getTime();

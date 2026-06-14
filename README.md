@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-lock-override-relock-fix`
+Build: `20260602-final-picks-reveal-fix`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-lock-override-relock-fix`.
+6. Confirm the footer shows `Build 20260602-final-picks-reveal-fix`.
 
 Hard refresh tips:
 
@@ -643,3 +643,14 @@ Behavior:
 - Relock Match removes the unlock override, so the match immediately locks again if its lock time has passed.
 - Admin-locked future match: button shows Remove Lock Override.
 - The Locks panel includes active overrides so they can be reversed.
+
+
+### Final picks reveal fix
+
+Final scored matches now always reveal regional picks on match cards.
+
+Fixes:
+- A match with a final score is treated as locked even if it had previously been admin-unlocked.
+- Match cards reveal the regional pick chips and pick distribution when a score is entered.
+- Saving a final score removes any stale lock override for that match.
+- Pick buttons stay disabled after final score entry.
