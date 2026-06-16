@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-final-picks-reveal-fix`
+Build: `20260602-date-time-order`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-final-picks-reveal-fix`.
+6. Confirm the footer shows `Build 20260602-date-time-order`.
 
 Hard refresh tips:
 
@@ -654,3 +654,14 @@ Fixes:
 - Match cards reveal the regional pick chips and pick distribution when a score is entered.
 - Saving a final score removes any stale lock override for that match.
 - Pick buttons stay disabled after final score entry.
+
+
+### Date and time match ordering
+
+Public match cards now display and sort by date and kickoff time first.
+
+Behavior:
+- Main match list sorts by kickoff date/time.
+- Match number is still shown on each card as a secondary reference.
+- Match card header shows local kickoff time first.
+- Admin views remain match-number ordered for score entry and troubleshooting.

@@ -608,7 +608,7 @@
       const stageOk = stage === 'All Stages' || m.stage === stage;
       const dateOk = date === 'All Dates' || m.date === date;
       return stageOk && dateOk;
-    });
+    }).sort((a,b) => kickoffDate(a).getTime() - kickoffDate(b).getTime() || Number(a.id) - Number(b.id));
   }
   function renderMatches(){
     const matchesEl = $('matches');
@@ -621,7 +621,8 @@
       return acc;
     }, {});
     matchesEl.innerHTML = Object.keys(grouped).sort().map(date => {
-      return `<section class="match-day-group"><h3>${date === 'TBD' ? 'Date TBD' : prettyLongDate(date)}</h3><div class="match-day-list">${grouped[date].map(cardHtml).join('')}</div></section>`;
+      const rows = grouped[date].slice().sort((a,b) => kickoffDate(a).getTime() - kickoffDate(b).getTime() || Number(a.id) - Number(b.id));
+      return `<section class="match-day-group"><h3>${date === 'TBD' ? 'Date TBD' : prettyLongDate(date)}</h3><div class="match-day-list">${rows.map(cardHtml).join('')}</div></section>`;
     }).join('');
     document.querySelectorAll('[data-pick]').forEach(btn => btn.addEventListener('click', onPick));
   }
@@ -643,6 +644,7 @@
     const pickArea = locked ? `<div class="pick-chip-grid">${pickChipsHtml(m)}</div>${pickSummaryHtml(m, true)}` : `<div class="simple-submit-row"><strong>Submitted: ${submitted} of ${REGIONS.length}</strong><span>${remaining} remaining</span><span>Picks reveal at lock</span></div>`;
     return `<article class="simple-match-card ${res ? 'is-final' : ''}">
       <div class="simple-match-head">
+        <span class="match-time-primary">${formatDeviceMatchTime(m)}</span>
         <span class="match-number">Match ${esc(m.id)}</span>
         <span class="stage-badge ${stageClass(m.stage)}">${esc(m.stage)}</span>
         <span class="status-pill ${status.cls}">${status.label}</span>
@@ -655,7 +657,6 @@
       ${scoreHtml}
       <div class="simple-details">
         <span>${prettyLongDate(m.date)}</span>
-        <span>${formatDeviceMatchTime(m)}</span>
         <span>${esc(m.venue)}${m.city ? ` · ${esc(m.city)}` : ''}</span>
       </div>
       ${lockNoticeHtml(m)}

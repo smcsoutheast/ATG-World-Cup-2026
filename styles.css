@@ -1060,3 +1060,17 @@ footer{
     grid-template-columns:1fr;
   }
 }
+
+
+.match-time-primary{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:#f8fafc;
+  border:1px solid rgba(15,23,42,.12);
+  color:#0f172a;
+  font-weight:800;
+  font-size:.85rem;
+}
