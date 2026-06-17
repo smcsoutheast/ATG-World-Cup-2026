@@ -365,9 +365,37 @@
   function awardLeaders(rows){
     const playedRows = rows.filter(r => r.p > 0);
     const source = playedRows.length ? playedRows : rows;
-    const goldenBall = source.slice().sort((a,b) => b.accuracy - a.accuracy || b.correct - a.correct || b.pts - a.pts || b.gd - a.gd || a.region.localeCompare(b.region));
-    const goldenBoot = source.slice().sort((a,b) => b.gf - a.gf || b.pts - a.pts || b.accuracy - a.accuracy || a.region.localeCompare(b.region));
-    const goldenGlove = source.slice().sort((a,b) => a.ga - b.ga || b.pts - a.pts || b.accuracy - a.accuracy || a.region.localeCompare(b.region));
+
+    // Golden Ball tiebreakers:
+    // 1. Accuracy %, 2. Total points, 3. Goal difference, 4. Goals for
+    const goldenBall = source.slice().sort((a,b) =>
+      b.accuracy - a.accuracy ||
+      b.pts - a.pts ||
+      b.gd - a.gd ||
+      b.gf - a.gf ||
+      a.region.localeCompare(b.region)
+    );
+
+    // Golden Boot tiebreakers:
+    // 1. Most goals for, 2. Total points, 3. Goal difference, 4. Fewest goals against
+    const goldenBoot = source.slice().sort((a,b) =>
+      b.gf - a.gf ||
+      b.pts - a.pts ||
+      b.gd - a.gd ||
+      a.ga - b.ga ||
+      a.region.localeCompare(b.region)
+    );
+
+    // Golden Glove tiebreakers:
+    // 1. Fewest goals against, 2. Total points, 3. Goal difference, 4. Most goals for
+    const goldenGlove = source.slice().sort((a,b) =>
+      a.ga - b.ga ||
+      b.pts - a.pts ||
+      b.gd - a.gd ||
+      b.gf - a.gf ||
+      a.region.localeCompare(b.region)
+    );
+
     const hotStreak = source.slice().sort((a,b) => currentWinStreak(b) - currentWinStreak(a) || b.accuracy - a.accuracy || b.pts - a.pts || a.region.localeCompare(b.region));
     return { goldenBall, goldenBoot, goldenGlove, hotStreak };
   }

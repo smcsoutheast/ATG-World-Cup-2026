@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-date-time-order`
+Build: `20260602-award-tiebreakers`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-date-time-order`.
+6. Confirm the footer shows `Build 20260602-award-tiebreakers`.
 
 Hard refresh tips:
 
@@ -665,3 +665,24 @@ Behavior:
 - Match number is still shown on each card as a secondary reference.
 - Match card header shows local kickoff time first.
 - Admin views remain match-number ordered for score entry and troubleshooting.
+
+
+### Award tiebreakers
+
+Golden Ball:
+1. Accuracy %
+2. Total points
+3. Goal difference
+4. Goals for
+
+Golden Boot:
+1. Most goals for
+2. Total points
+3. Goal difference
+4. Fewest goals against
+
+Golden Glove:
+1. Fewest goals against
+2. Total points
+3. Goal difference
+4. Most goals for
