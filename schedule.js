@@ -528,7 +528,7 @@ window.ATG_SCHEDULE = [
     "id": "36",
     "stage": "Group Stage",
     "group": "F",
-    "date": "2026-06-20",
+    "date": "2026-06-21",
     "timeET": "00:00",
     "homeTeam": "Tunisia",
     "awayTeam": "Japan",
