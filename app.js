@@ -277,8 +277,39 @@
   }
 
   function isKnockout(stage){ return stage !== 'Group Stage'; }
+
+  function scoreStatusKey(value){
+    const raw = String(value || '').trim().toLowerCase().replace(/[_-]+/g,' ');
+    if(raw === 'final' || raw === 'ft' || raw === 'full time' || raw === 'finished') return 'final';
+    if(raw === 'half' || raw === 'halftime' || raw === 'half time' || raw === 'ht') return 'halftime';
+    if(raw === 'extra' || raw === 'extra time' || raw === 'et' || raw === 'aet') return 'extra-time';
+    if(raw === 'pen' || raw === 'pens' || raw === 'penalty' || raw === 'penalties' || raw === 'penalty shootout') return 'penalties';
+    if(raw === 'kickoff' || raw === 'kick off' || raw === 'live' || raw === 'in play' || raw === 'in_play' || raw === 'started') return 'kickoff';
+    return 'kickoff';
+  }
+
+  function scoreStatusLabel(value){
+    const key = scoreStatusKey(value);
+    return ({
+      'kickoff':'Kickoff',
+      'halftime':'Halftime',
+      'extra-time':'Extra Time',
+      'penalties':'Penalties',
+      'final':'Final'
+    })[key] || 'Kickoff';
+  }
+
+  function scoreStatusOptions(m){
+    const values = isKnockout(m.stage) ? ['kickoff','halftime','extra-time','penalties','final'] : ['kickoff','halftime','final'];
+    const current = scoreStatusKey(m.scoreStatus || (hasAnyScore(m) ? 'kickoff' : 'kickoff'));
+    return values.map(value => `<option value="${value}" ${current === value ? 'selected' : ''}>${scoreStatusLabel(value)}</option>`).join('');
+  }
+
+  function hasAnyScore(m){
+    return !(m.homeScore === null || m.homeScore === undefined || m.homeScore === '' || m.awayScore === null || m.awayScore === undefined || m.awayScore === '');
+  }
   function resultFor(m){
-    if(m.homeScore === null || m.homeScore === undefined || m.awayScore === null || m.awayScore === undefined || m.homeScore === '' || m.awayScore === '') return null;
+    if(!hasScore(m)) return null;
     const h = Number(m.homeScore), a = Number(m.awayScore);
     if(h > a) return 'HOME';
     if(a > h) return 'AWAY';
@@ -668,9 +699,9 @@
       ? `<div class="pick-buttons ${isKnockout(m.stage) ? 'knockout' : ''}">${options.map(o => `<button class="pick-btn ${current===o?'active':''}" data-pick="${o}" data-match="${m.id}" ${locked ? 'disabled' : ''}>${esc(pickLabel(m,o))}</button>`).join('')}</div><p class="meta">${locked ? 'Picks locked for this match.' : 'Only your region pick is visible before lock.'}</p>`
       : '';
     const pickPanelHtml = buttons ? `<div class="pick-panel">${buttons}</div>` : '';
-    const scoreHtml = res ? `<div class="simple-score">${matchCardScoreText(m)}<span>${esc(resultName(m,res))}</span></div>` : '';
+    const scoreHtml = hasAnyScore(m) ? `<div class="simple-score ${final ? '' : 'is-live'}">${matchCardScoreText(m)}<span>${esc(final && res ? resultName(m,res) : scoreStatusLabel(m.scoreStatus))}</span></div>` : '';
     const pickArea = locked ? `<div class="pick-chip-grid">${pickChipsHtml(m)}</div>${pickSummaryHtml(m, true)}` : `<div class="simple-submit-row"><strong>Submitted: ${submitted} of ${REGIONS.length}</strong><span>${remaining} remaining</span><span>Picks reveal at lock</span></div>`;
-    return `<article class="simple-match-card ${res ? 'is-final' : ''}">
+    return `<article class="simple-match-card ${final ? 'is-final' : hasAnyScore(m) ? 'is-live-score' : ''}">
       <div class="simple-match-head">
         <span class="match-time-primary">${formatDeviceMatchTime(m)}</span>
         <span class="match-number">Match ${esc(m.id)}</span>
@@ -710,7 +741,8 @@ function simpleTeamHtml(team){
   }
 
 function matchStatus(m, locked, res){
-    if(res) return { label:'Final', cls:'final' };
+    if(hasScore(m)) return { label:'Final', cls:'final' };
+    if(hasAnyScore(m)) return { label:scoreStatusLabel(m.scoreStatus), cls:'live' };
     if(locked) return { label:'Locked', cls:'locked' };
     const lock = lockDate(m).getTime();
     const now = Date.now();
@@ -750,7 +782,7 @@ function matchStatus(m, locked, res){
     if(!raw) return null;
     const matchId = String(raw.matchId || raw.id || raw.match_id || '').trim();
     if(!matchId) return null;
-    const status = String(raw.status || raw.matchStatus || raw.state || 'final').toLowerCase();
+    const status = scoreStatusKey(raw.status || raw.matchStatus || raw.state || 'final');
     const homeScore = raw.homeScore ?? raw.home_goals ?? raw.homeGoals ?? raw.home ?? null;
     const awayScore = raw.awayScore ?? raw.away_goals ?? raw.awayGoals ?? raw.away ?? null;
     const homePens = raw.homePens ?? raw.home_penalties ?? raw.homePenaltyScore ?? raw.homePenalties ?? '';
@@ -813,6 +845,7 @@ function matchStatus(m, locked, res){
       String(m.awayScore ?? '') !== String(s.awayScore ?? '') ||
       String(m.homePens ?? '') !== String(s.homePens ?? '') ||
       String(m.awayPens ?? '') !== String(s.awayPens ?? '') ||
+      scoreStatusKey(m.scoreStatus || '') !== scoreStatusKey(s.status || 'final') ||
       String(state.advancers?.[m.id] || '') !== String(s.advancer || '');
   }
 
@@ -820,7 +853,7 @@ function matchStatus(m, locked, res){
     const s = suggestionFor(id);
     const m = matches().find(match => String(match.id) === String(id));
     if(!s || !m){ $('adminStatus').textContent = 'Score suggestion not found.'; return; }
-    applyScore(id, s.homeScore, s.awayScore, s.advancer || '', s.homePens, s.awayPens, `approved score suggestion from ${s.source || 'score feed'}`);
+    applyScore(id, s.homeScore, s.awayScore, s.advancer || '', s.homePens, s.awayPens, s.status || 'final', `approved score suggestion from ${s.source || 'score feed'}`);
   }
 
   function dismissScoreSuggestion(id){
@@ -842,27 +875,29 @@ function matchStatus(m, locked, res){
       return `<div class="admin-row clean-admin-row score-suggestion-row ${differs ? '' : 'muted-row'}">
         <div>#${esc(m.id)}</div>
         <div class="game-title">${flagFor(m.homeTeam)} ${esc(m.homeTeam)} vs ${flagFor(m.awayTeam)} ${esc(m.awayTeam)}<br><span class="meta">${esc(s.source || 'Score feed')} · ${prettyTimestamp(s.fetchedAt)} · ${differs ? 'Needs approval' : 'Already applied'}</span></div>
-        <div class="suggested-score"><strong>${esc(s.homeScore)}-${esc(s.awayScore)}</strong><span>${penText || 'Suggested result'}</span></div>
+        <div class="suggested-score"><strong>${esc(s.homeScore)}-${esc(s.awayScore)}</strong><span>${esc(scoreStatusLabel(s.status))}${penText}</span></div>
         <button data-approve-score="${esc(m.id)}" type="button" ${differs ? '' : 'disabled'}>Approve</button>
         <button data-dismiss-score="${esc(m.id)}" type="button" class="ghost small">Dismiss</button>
       </div>`;
     }).join('') || '<p class="meta">No matching score suggestions found.</p>';
   }
 
-  function applyScore(id, homeScore, awayScore, advancer, homePens, awayPens, sourceLabel){
+  function applyScore(id, homeScore, awayScore, advancer, homePens, awayPens, scoreStatus, sourceLabel){
     const m = matches().find(match => String(match.id) === String(id));
     if(!m){ $('adminStatus').textContent = 'Match not found.'; return false; }
     if(homeScore === '' || awayScore === '' || homeScore === null || awayScore === null){ $('adminStatus').textContent = 'Enter both scores before saving.'; return false; }
     if(Number(homeScore) < 0 || Number(awayScore) < 0){ $('adminStatus').textContent = 'Scores cannot be negative.'; return false; }
+    const status = scoreStatusKey(scoreStatus || 'final');
+    const isFinal = status === 'final';
     const penHome = homePens === null || homePens === undefined ? '' : String(homePens);
     const penAway = awayPens === null || awayPens === undefined ? '' : String(awayPens);
     let finalAdvancer = advancer || '';
-    if(isKnockout(m.stage) && Number(homeScore) === Number(awayScore)){
+    if(isFinal && isKnockout(m.stage) && Number(homeScore) === Number(awayScore)){
       if((penHome !== '' || penAway !== '') && Number(penHome) !== Number(penAway)){
         finalAdvancer = Number(penHome) > Number(penAway) ? 'HOME' : 'AWAY';
       }
       if(finalAdvancer !== 'HOME' && finalAdvancer !== 'AWAY'){
-        $('adminStatus').textContent = 'Knockout match is tied. Choose which team advances or enter penalty shootout score.';
+        $('adminStatus').textContent = 'Final knockout match is tied. Choose which team advances or enter penalty shootout score.';
         return false;
       }
     }
@@ -872,8 +907,8 @@ function matchStatus(m, locked, res){
     state.scoreHistory = state.scoreHistory || [];
     state.scoreHistory.push({ id, prior, priorAdvancer, at:new Date().toISOString() });
     state.scoreHistory = state.scoreHistory.slice(-25);
-    state.scores[id] = { homeScore:Number(homeScore), awayScore:Number(awayScore) };
-    if(state.lockOverrides && state.lockOverrides[id]){
+    state.scores[id] = { homeScore:Number(homeScore), awayScore:Number(awayScore), scoreStatus:status };
+    if(isFinal && state.lockOverrides && state.lockOverrides[id]){
       delete state.lockOverrides[id];
     }
     if(penHome !== '' || penAway !== ''){
@@ -881,10 +916,10 @@ function matchStatus(m, locked, res){
       state.scores[id].awayPens = penAway === '' ? '' : Number(penAway);
     }
     state.advancers = state.advancers || {};
-    if(isKnockout(m.stage) && Number(homeScore) === Number(awayScore)) state.advancers[id] = finalAdvancer;
+    if(isFinal && isKnockout(m.stage) && Number(homeScore) === Number(awayScore)) state.advancers[id] = finalAdvancer;
     else delete state.advancers[id];
     const penAudit = (penHome !== '' || penAway !== '') ? `, penalties ${penHome || 0}-${penAway || 0}` : '';
-    addAudit(`Super Admin ${sourceLabel || 'updated'} Match ${id} score to ${homeScore}-${awayScore}${penAudit}${state.advancers[id] ? `, ${pickLabel(m, state.advancers[id])} advances` : ''}`);
+    addAudit(`Super Admin ${sourceLabel || 'updated'} Match ${id} score to ${homeScore}-${awayScore} (${scoreStatusLabel(status)})${penAudit}${state.advancers[id] ? `, ${pickLabel(m, state.advancers[id])} advances` : ''}`);
     if(state.scoreSuggestions) delete state.scoreSuggestions[String(id)];
     saveState();
     renderAll();
@@ -898,7 +933,7 @@ function matchStatus(m, locked, res){
     const all = matches().sort((a,b) => Number(a.id) - Number(b.id));
     const now = Date.now();
     const todayKey = new Date().toISOString().slice(0,10);
-    const needingScores = all.filter(m => !hasScore(m) && (m.date === todayKey || kickoffDate(m).getTime() <= now || isPickLocked(m))).slice(0,16);
+    const needingScores = all.filter(m => !hasScore(m) && (hasAnyScore(m) || m.date === todayKey || kickoffDate(m).getTime() <= now || isPickLocked(m))).slice(0,16);
     const scoreRows = (needingScores.length ? needingScores : all.slice(0,16)).map(adminScoreRow).join('');
     const lockedRows = all.filter(m => !hasScore(m) && (isPickLocked(m) || state.lockOverrides?.[m.id])).slice(0,14).map(adminLockRow).join('') || '<p class="meta">No lock overrides or locked matches need attention.</p>';
     const completedRows = all.filter(hasScore).slice(-12).reverse().map(adminCompletedRow).join('') || '<p class="meta">No completed matches yet.</p>';
@@ -982,19 +1017,24 @@ function matchStatus(m, locked, res){
   }
 
 function adminScoreRow(m){
-    const tied = isKnockout(m.stage) && hasScore(m) && Number(m.homeScore) === Number(m.awayScore);
+    const final = hasScore(m);
+    const tied = isKnockout(m.stage) && final && Number(m.homeScore) === Number(m.awayScore);
     const adv = state.advancers?.[m.id] || '';
     const suggestion = suggestionFor(m.id);
     const suggestionNote = suggestion ? `<span class="score-suggestion-pill">Suggestion available</span>` : '';
+    const scoreStatus = hasAnyScore(m) ? scoreStatusLabel(m.scoreStatus) : 'No score';
     return `<div class="admin-row clean-admin-row">
       <div>#${esc(m.id)}</div>
-      <div class="game-title">${flagFor(m.homeTeam)} ${esc(m.homeTeam)} vs ${flagFor(m.awayTeam)} ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)} · ${lockStatusText(m)} ${suggestionNote}</span></div>
+      <div class="game-title">${flagFor(m.homeTeam)} ${esc(m.homeTeam)} vs ${flagFor(m.awayTeam)} ${esc(m.awayTeam)}<br><span class="meta">${prettyDate(m.date)} · ${esc(m.stage)} · ${lockStatusText(m)} · ${esc(scoreStatus)} ${suggestionNote}</span></div>
       <input data-home="${esc(m.id)}" type="number" min="0" value="${m.homeScore ?? ''}" placeholder="Home">
       <input data-away="${esc(m.id)}" type="number" min="0" value="${m.awayScore ?? ''}" placeholder="Away">
+      <select data-score-status="${esc(m.id)}" class="admin-score-status">
+        ${scoreStatusOptions(m)}
+      </select>
       <input data-home-pens="${esc(m.id)}" class="${isKnockout(m.stage) ? '' : 'hidden'}" type="number" min="0" value="${m.homePens ?? ''}" placeholder="Home pens">
       <input data-away-pens="${esc(m.id)}" class="${isKnockout(m.stage) ? '' : 'hidden'}" type="number" min="0" value="${m.awayPens ?? ''}" placeholder="Away pens">
       <select data-advancer="${esc(m.id)}" class="admin-advancer ${isKnockout(m.stage) ? '' : 'hidden'}">
-        <option value="">Advancer if tied</option>
+        <option value="">Advancer if final tied</option>
         <option value="HOME" ${adv === 'HOME' ? 'selected' : ''}>${esc(m.homeTeam)} advances</option>
         <option value="AWAY" ${adv === 'AWAY' ? 'selected' : ''}>${esc(m.awayTeam)} advances</option>
       </select>
@@ -1014,7 +1054,7 @@ function adminLockRow(m){
   function adminCompletedRow(m){
     const score = `${scoreText(m.homeScore)}-${scoreText(m.awayScore)}`;
     const adv = state.advancers?.[m.id] ? ` · ${pickLabel(m, state.advancers[m.id])} advances` : '';
-    return `<div class="admin-completed-line"><strong>Match ${esc(m.id)}</strong><span>${esc(m.homeTeam)} ${esc(score)} ${esc(m.awayTeam)}${esc(adv)}</span></div>`;
+    return `<div class="admin-completed-line"><strong>Match ${esc(m.id)}</strong><span>${esc(m.homeTeam)} ${esc(score)} ${esc(m.awayTeam)} · Final${esc(adv)}</span></div>`;
   }
 
   function lockStatusText(m){
@@ -1029,9 +1069,11 @@ function adminLockRow(m){
     const a = document.querySelector(`[data-away="${CSS.escape(id)}"]`).value;
     const hp = document.querySelector(`[data-home-pens="${CSS.escape(id)}"]`)?.value || '';
     const ap = document.querySelector(`[data-away-pens="${CSS.escape(id)}"]`)?.value || '';
+    const statusSel = document.querySelector(`[data-score-status="${CSS.escape(id)}"]`);
+    const scoreStatus = statusSel ? statusSel.value : 'final';
     const advSel = document.querySelector(`[data-advancer="${CSS.escape(id)}"]`);
     const advancer = advSel ? advSel.value : '';
-    applyScore(id, h, a, advancer, hp, ap, 'updated');
+    applyScore(id, h, a, advancer, hp, ap, scoreStatus, 'updated');
   }
 
 function clearScore(id){
@@ -1465,7 +1507,7 @@ function clearScore(id){
   }
 
   function hasScore(m){
-    return !(m.homeScore === null || m.homeScore === undefined || m.homeScore === '' || m.awayScore === null || m.awayScore === undefined || m.awayScore === '');
+    return hasAnyScore(m) && scoreStatusKey(m.scoreStatus || 'final') === 'final';
   }
 
   function advanceText(m, advanceMap){

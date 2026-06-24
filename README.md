@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-award-tiebreakers`
+Build: `20260602-score-status-update`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-award-tiebreakers`.
+6. Confirm the footer shows `Build 20260602-score-status-update`.
 
 Hard refresh tips:
 
@@ -686,3 +686,29 @@ Golden Glove:
 2. Total points
 3. Goal difference
 4. Most goals for
+
+
+### Score status update
+
+Super Admin score entry now supports score statuses.
+
+Group Stage statuses:
+1. Kickoff
+2. Halftime
+3. Final
+
+Knockout Stage statuses:
+1. Kickoff
+2. Halftime
+3. Extra Time
+4. Penalties
+5. Final
+
+Only Final scores count toward:
+- Around the Grounds standings
+- Awards
+- World Cup group standings
+- Knockout advancement
+- Champion card
+
+Kickoff, Halftime, Extra Time, and Penalties display as live score states only.
