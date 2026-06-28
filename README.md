@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-knockout-admin-readability-fix`
+Build: `20260602-knockout-match-edit`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-knockout-admin-readability-fix`.
+6. Confirm the footer shows `Build 20260602-knockout-match-edit`.
 
 Hard refresh tips:
 
@@ -737,3 +737,15 @@ Updated:
 - Status column shows Projected, Confirmed, Needs team, or Changed after confirmation.
 - Summary cards show ready matchups, unresolved matchups, and changed matchups.
 - Confirmed matchups still stay locked unless Super Admin resets confirmation.
+
+
+### Knockout matchup edit controls
+
+Super Admin can now confirm or change Round of 32 matchups one at a time.
+
+Controls:
+- Confirm Match: saves the current projected matchup.
+- Make Change: saves the Home/Away teams typed into the row.
+- Clear: removes that saved matchup and returns it to the projection.
+
+Saved individual matchups feed the public bracket immediately, even before all Round of 32 matches are confirmed.

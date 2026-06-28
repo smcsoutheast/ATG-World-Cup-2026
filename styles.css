@@ -1310,3 +1310,70 @@ footer{
     grid-template-columns:1fr;
   }
 }
+
+
+.admin-knockout-row.editable{
+  grid-template-columns:110px minmax(280px,1fr) minmax(210px,.65fr) minmax(170px,.45fr);
+}
+
+.knockout-edit-teams{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.knockout-edit-teams label{
+  display:grid;
+  gap:5px;
+  color:#64748b;
+  font-size:.72rem;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.knockout-edit-teams input{
+  width:100%;
+  border:1px solid rgba(15,23,42,.14);
+  border-radius:10px;
+  padding:9px 10px;
+  background:#fff;
+  color:#0f172a;
+  font-weight:800;
+  font-size:.9rem;
+  text-transform:none;
+  letter-spacing:0;
+}
+
+.knockout-row-actions{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:7px;
+}
+
+.knockout-row-actions button{
+  width:100%;
+}
+
+.knockout-confirm-box.partial{
+  border-color:rgba(245,158,11,.45);
+  background:#fffaf0;
+}
+
+@media (max-width: 1100px){
+  .admin-knockout-row.editable{
+    grid-template-columns:1fr;
+  }
+  .knockout-edit-teams{
+    grid-template-columns:1fr;
+  }
+  .knockout-row-actions{
+    flex-direction:row;
+    flex-wrap:wrap;
+  }
+  .knockout-row-actions button{
+    width:auto;
+    flex:1 1 140px;
+  }
+}

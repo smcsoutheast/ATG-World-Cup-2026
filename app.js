@@ -195,10 +195,13 @@
 
   function knockoutConfirmationStatus(){
     const conf = knockoutConfirmation();
-    if(conf.confirmed) return `Confirmed ${prettyTimestamp(conf.at)}`;
+    const projected = projectedRound32Matchups();
+    const confirmedCount = projected.filter(m => conf.matchups?.[String(m.id)]).length;
+    if(conf.confirmed) return `All matchups confirmed ${prettyTimestamp(conf.at)}`;
+    if(confirmedCount) return `Partially confirmed, ${confirmedCount} of ${projected.length}`;
     if(!groupStageComplete()) return 'Projected until group stage is complete';
-    const unresolved = projectedRound32Matchups().filter(m => unresolvedKnockoutTeam(m.homeTeam) || unresolvedKnockoutTeam(m.awayTeam));
-    return unresolved.length ? 'Projected, needs review' : 'Ready for Super Admin confirmation';
+    const unresolved = projected.filter(m => unresolvedKnockoutTeam(m.homeTeam) || unresolvedKnockoutTeam(m.awayTeam));
+    return unresolved.length ? 'Projected, needs review or manual changes' : 'Ready for Super Admin confirmation';
   }
 
   function confirmKnockoutMatchups(){
@@ -227,6 +230,88 @@
     $('adminStatus').textContent = 'Knockout confirmation reset. Round of 32 is projected again.';
   }
 
+  function knockoutTeamOptionsHtml(){
+    const names = Array.from(new Set((window.ATG_SCHEDULE || [])
+      .filter(m => m.stage === 'Group Stage')
+      .flatMap(m => [m.homeTeam, m.awayTeam])
+      .filter(Boolean)
+      .filter(name => !unresolvedKnockoutTeam(name))
+    )).sort((a,b) => a.localeCompare(b));
+    return `<datalist id="knockoutTeamOptions">${names.map(name => `<option value="${esc(name)}"></option>`).join('')}</datalist>`;
+  }
+
+  function knockoutMatchupInputs(id){
+    const home = document.querySelector(`[data-matchup-home="${CSS.escape(String(id))}"]`);
+    const away = document.querySelector(`[data-matchup-away="${CSS.escape(String(id))}"]`);
+    return {
+      homeTeam: home ? home.value.trim() : '',
+      awayTeam: away ? away.value.trim() : ''
+    };
+  }
+
+  function refreshKnockoutConfirmationState(){
+    const conf = knockoutConfirmation();
+    const projected = projectedRound32Matchups();
+    const confirmedCount = projected.filter(m => conf.matchups?.[String(m.id)]).length;
+    conf.confirmed = projected.length > 0 && confirmedCount === projected.length;
+    if(confirmedCount && !conf.at) conf.at = new Date().toISOString();
+    if(!confirmedCount) conf.at = null;
+  }
+
+  function saveKnockoutMatchup(id, useInputs){
+    const projected = projectedRound32Matchups().find(m => String(m.id) === String(id));
+    if(!projected){
+      $('adminStatus').textContent = 'Knockout matchup not found.';
+      return;
+    }
+
+    const inputValues = knockoutMatchupInputs(id);
+    const homeTeam = (useInputs ? inputValues.homeTeam : projected.homeTeam || '').trim();
+    const awayTeam = (useInputs ? inputValues.awayTeam : projected.awayTeam || '').trim();
+
+    if(!homeTeam || !awayTeam){
+      $('adminStatus').textContent = 'Enter both teams before saving the matchup.';
+      return;
+    }
+
+    if(homeTeam === awayTeam){
+      $('adminStatus').textContent = 'Home and away teams cannot be the same.';
+      return;
+    }
+
+    if(!useInputs && (unresolvedKnockoutTeam(homeTeam) || unresolvedKnockoutTeam(awayTeam))){
+      $('adminStatus').textContent = 'This matchup still has unresolved teams. Use Make Change to enter the correct teams.';
+      return;
+    }
+
+    const conf = knockoutConfirmation();
+    conf.matchups[String(id)] = {
+      homeTeam,
+      awayTeam,
+      at: new Date().toISOString(),
+      source: useInputs ? 'manual change' : 'confirmed projection'
+    };
+    refreshKnockoutConfirmationState();
+
+    addAudit(`Super Admin ${useInputs ? 'changed' : 'confirmed'} Round of 32 Match ${id}: ${homeTeam} vs ${awayTeam}`);
+    saveState(); renderAll(); renderAdmin();
+    $('adminStatus').textContent = useInputs ? `Match ${id} matchup changed.` : `Match ${id} matchup confirmed.`;
+  }
+
+  function clearKnockoutMatchup(id){
+    const conf = knockoutConfirmation();
+    if(conf.matchups?.[String(id)]){
+      delete conf.matchups[String(id)];
+      refreshKnockoutConfirmationState();
+      addAudit(`Super Admin cleared Round of 32 Match ${id} matchup confirmation`);
+      saveState(); renderAll(); renderAdmin();
+      $('adminStatus').textContent = `Match ${id} returned to projected matchup.`;
+    } else {
+      $('adminStatus').textContent = 'No saved matchup change to clear.';
+    }
+  }
+
+
   function matchupTeamHtml(label, team){
     const name = team || 'TBD';
     const unresolved = unresolvedKnockoutTeam(name);
@@ -249,53 +334,77 @@
     const status = knockoutConfirmationStatus();
     const projected = projectedRound32Matchups();
     const total = projected.length;
-    const unresolved = projected.filter(m => unresolvedKnockoutTeam(m.homeTeam) || unresolvedKnockoutTeam(m.awayTeam)).length;
+    const confirmedCount = projected.filter(m => conf.matchups?.[String(m.id)]).length;
+    const unresolved = projected.filter(m => {
+      const saved = conf.matchups?.[String(m.id)];
+      const display = saved || m;
+      return unresolvedKnockoutTeam(display.homeTeam) || unresolvedKnockoutTeam(display.awayTeam);
+    }).length;
     const ready = Math.max(0, total - unresolved);
-    const changed = conf.confirmed ? projected.filter(m => {
+    const changed = projected.filter(m => {
       const locked = conf.matchups?.[String(m.id)];
       return locked && knockoutChangeText(locked, m);
-    }).length : 0;
+    }).length;
 
     const rows = projected.map(m => {
-      const locked = conf.confirmed ? conf.matchups?.[String(m.id)] : null;
+      const locked = conf.matchups?.[String(m.id)] || null;
       const display = locked || m;
       const changeText = knockoutChangeText(locked, m);
-      const rowStatus = changeText ? 'Changed after confirmation' : locked ? 'Confirmed' : (unresolvedKnockoutTeam(display.homeTeam) || unresolvedKnockoutTeam(display.awayTeam)) ? 'Needs team' : 'Projected';
-      const rowClass = changeText ? 'changed' : locked ? 'confirmed' : rowStatus === 'Needs team' ? 'unresolved' : 'projected';
-      return `<div class="knockout-confirm-row admin-knockout-row ${rowClass}">
+      const unresolvedRow = unresolvedKnockoutTeam(display.homeTeam) || unresolvedKnockoutTeam(display.awayTeam);
+      const rowStatus = changeText ? 'Changed manually' : locked ? 'Confirmed' : unresolvedRow ? 'Needs team' : 'Projected';
+      const rowClass = changeText ? 'changed' : locked ? 'confirmed' : unresolvedRow ? 'unresolved' : 'projected';
+      const currentProjection = `${m.homeTeam || 'TBD'} vs ${m.awayTeam || 'TBD'}`;
+      const savedLabel = locked ? `${locked.homeTeam || 'TBD'} vs ${locked.awayTeam || 'TBD'}` : 'Not saved yet';
+      const confirmDisabled = unresolvedKnockoutTeam(m.homeTeam) || unresolvedKnockoutTeam(m.awayTeam) ? 'disabled' : '';
+
+      return `<div class="knockout-confirm-row admin-knockout-row editable ${rowClass}">
         <div class="knockout-match-id">
           <strong>Match ${esc(m.id)}</strong>
           <span>Round of 32</span>
         </div>
-        <div class="knockout-teams">
-          ${matchupTeamHtml('Home', display.homeTeam)}
-          ${matchupTeamHtml('Away', display.awayTeam)}
+
+        <div class="knockout-edit-teams">
+          <label>Home
+            <input data-matchup-home="${esc(m.id)}" list="knockoutTeamOptions" type="text" value="${esc(display.homeTeam || '')}" placeholder="Home team">
+          </label>
+          <label>Away
+            <input data-matchup-away="${esc(m.id)}" list="knockoutTeamOptions" type="text" value="${esc(display.awayTeam || '')}" placeholder="Away team">
+          </label>
         </div>
+
         <div class="knockout-row-status">
           <strong>${esc(rowStatus)}</strong>
-          ${changeText ? `<span>Current projection: ${esc(changeText)}</span>` : `<span>${conf.confirmed ? 'Locked matchup' : 'Review before confirming'}</span>`}
+          <span>Saved: ${esc(savedLabel)}</span>
+          ${changeText ? `<span>Projection: ${esc(currentProjection)}</span>` : `<span>Projection: ${esc(currentProjection)}</span>`}
+        </div>
+
+        <div class="knockout-row-actions">
+          <button data-confirm-matchup="${esc(m.id)}" type="button" class="small" ${confirmDisabled}>Confirm Match</button>
+          <button data-save-matchup-change="${esc(m.id)}" type="button" class="small">Make Change</button>
+          <button data-clear-matchup="${esc(m.id)}" type="button" class="ghost small" ${locked ? '' : 'disabled'}>Clear</button>
         </div>
       </div>`;
     }).join('') || '<p class="meta">No Round of 32 matches found.</p>';
 
     const confirmDisabled = conf.confirmed || !groupStageComplete() || unresolved ? 'disabled' : '';
-    const resetDisabled = conf.confirmed ? '' : 'disabled';
+    const resetDisabled = confirmedCount ? '' : 'disabled';
 
-    return `<div class="knockout-confirm-box ${conf.confirmed ? 'confirmed' : 'projected'}">
+    return `<div class="knockout-confirm-box ${conf.confirmed ? 'confirmed' : confirmedCount ? 'partial' : 'projected'}">
       <div class="knockout-confirm-head">
-        <strong>${conf.confirmed ? 'Confirmed Round of 32 matchups' : 'Projected Round of 32 matchups'}</strong>
+        <strong>${conf.confirmed ? 'Confirmed Round of 32 matchups' : confirmedCount ? 'Partially confirmed Round of 32 matchups' : 'Projected Round of 32 matchups'}</strong>
         <span>${esc(status)}</span>
       </div>
       <div class="knockout-confirm-summary">
         <div><span>Ready</span><strong>${ready} / ${total}</strong></div>
-        <div><span>Needs Review</span><strong>${unresolved}</strong></div>
+        <div><span>Confirmed</span><strong>${confirmedCount}</strong></div>
         <div><span>Changed</span><strong>${changed}</strong></div>
       </div>
       <div class="knockout-confirm-actions">
-        <button id="confirmKnockoutMatchups" type="button" ${confirmDisabled}>Confirm Knockout Matchups</button>
-        <button id="resetKnockoutConfirmation" type="button" class="ghost small" ${resetDisabled}>Reset Confirmation</button>
+        <button id="confirmKnockoutMatchups" type="button" ${confirmDisabled}>Confirm All Matchups</button>
+        <button id="resetKnockoutConfirmation" type="button" class="ghost small" ${resetDisabled}>Reset All Confirmations</button>
       </div>
-      <p class="meta">${conf.confirmed ? 'Confirmed matchups stay fixed. If the current projection changes later, the change appears in the right column.' : 'Review all projected teams here before confirming. Matchups with TBD or unresolved slots cannot be confirmed.'}</p>
+      <p class="meta">Use Confirm Match when the projection is correct. Use Make Change after editing Home or Away. Saved matchups feed the public bracket immediately.</p>
+      ${knockoutTeamOptionsHtml()}
       <div class="knockout-confirm-list admin-knockout-list">${rows}</div>
     </div>`;
   }
@@ -400,7 +509,7 @@
     }
 
     baseMatches.filter(m => m.stage !== 'Group Stage').sort((a,b) => Number(a.id) - Number(b.id)).forEach(m => {
-      const confirmed = state.knockoutConfirmation?.confirmed ? state.knockoutConfirmation.matchups?.[String(m.id)] : null;
+      const confirmed = state.knockoutConfirmation?.matchups?.[String(m.id)] || null;
       if(m.stage === 'Round of 32' && confirmed){
         derived[String(m.id)] = { homeTeam:confirmed.homeTeam, awayTeam:confirmed.awayTeam, matchupConfirmed:true };
         return;
@@ -1105,7 +1214,7 @@ function matchStatus(m, locked, res){
       </div>
       <div class="admin-section">
         <h3>Knockout Matchups</h3>
-        <p class="meta">Review the readable Round of 32 list below. Confirmed matchups stay locked. If the current projection later differs from a confirmed matchup, it will be marked as changed.</p>
+        <p class="meta">Confirm correct Round of 32 matchups one at a time, or edit Home/Away and save a manual change.</p>
         <div class="admin-list">${knockoutRows}</div>
       </div>
       <div class="admin-section">
@@ -1157,6 +1266,9 @@ function matchStatus(m, locked, res){
     if(confirmKnockoutBtn) confirmKnockoutBtn.addEventListener('click', confirmKnockoutMatchups);
     const resetKnockoutBtn = $('resetKnockoutConfirmation');
     if(resetKnockoutBtn) resetKnockoutBtn.addEventListener('click', resetKnockoutConfirmation);
+    document.querySelectorAll('[data-confirm-matchup]').forEach(b => b.addEventListener('click', () => saveKnockoutMatchup(b.dataset.confirmMatchup, false)));
+    document.querySelectorAll('[data-save-matchup-change]').forEach(b => b.addEventListener('click', () => saveKnockoutMatchup(b.dataset.saveMatchupChange, true)));
+    document.querySelectorAll('[data-clear-matchup]').forEach(b => b.addEventListener('click', () => clearKnockoutMatchup(b.dataset.clearMatchup)));
     const reloadBtn = $('reloadFirebase');
     if(reloadBtn) reloadBtn.addEventListener('click', reloadFromFirebase);
     document.querySelectorAll('[data-save-score]').forEach(b => b.addEventListener('click', () => saveScore(b.dataset.saveScore)));
