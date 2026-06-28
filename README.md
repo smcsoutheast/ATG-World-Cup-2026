@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-knockout-confirmation`
+Build: `20260602-knockout-admin-readability-fix`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-knockout-confirmation`.
+6. Confirm the footer shows `Build 20260602-knockout-admin-readability-fix`.
 
 Hard refresh tips:
 
@@ -725,3 +725,15 @@ Behavior:
 - Confirmed Round of 32 matchups stay fixed even if projected group standings later change.
 - Later knockout rounds still advance automatically from confirmed match results.
 - Reset Confirmation returns the bracket to projected Round of 32 matchups.
+
+
+### Knockout admin readability fix
+
+Super Admin Knockout Matchups now show a readable Round of 32 review list.
+
+Updated:
+- Match number is separated from team names.
+- Home and Away teams display in stacked rows.
+- Status column shows Projected, Confirmed, Needs team, or Changed after confirmation.
+- Summary cards show ready matchups, unresolved matchups, and changed matchups.
+- Confirmed matchups still stay locked unless Super Admin resets confirmation.
