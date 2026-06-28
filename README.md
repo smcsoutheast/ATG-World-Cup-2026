@@ -6,7 +6,7 @@ The app supports regional picks, live standings, World Cup group standings, auto
 
 ## Current build
 
-Build: `20260602-score-status-update`
+Build: `20260602-knockout-confirmation`
 
 This build is intended as the final pre-tournament version. Minor event updates should focus on scores, Firebase data, and small text or style fixes.
 
@@ -316,7 +316,7 @@ Recommended deployment steps:
 3. Commit changes.
 4. Wait 1 to 3 minutes for GitHub Pages to rebuild.
 5. Hard refresh the site.
-6. Confirm the footer shows `Build 20260602-score-status-update`.
+6. Confirm the footer shows `Build 20260602-knockout-confirmation`.
 
 Hard refresh tips:
 
@@ -712,3 +712,16 @@ Only Final scores count toward:
 - Champion card
 
 Kickoff, Halftime, Extra Time, and Penalties display as live score states only.
+
+
+### Knockout matchup confirmation
+
+Super Admin can now confirm Round of 32 matchups after the group stage is complete.
+
+Behavior:
+- Before confirmation, Round of 32 matchups are projected from group standings and wildcard logic.
+- Super Admin reviews the projected Round of 32 in the admin panel.
+- Confirm Knockout Matchups locks the Round of 32 teams into Firebase.
+- Confirmed Round of 32 matchups stay fixed even if projected group standings later change.
+- Later knockout rounds still advance automatically from confirmed match results.
+- Reset Confirmation returns the bracket to projected Round of 32 matchups.

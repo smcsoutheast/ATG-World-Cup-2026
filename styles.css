@@ -1096,3 +1096,73 @@ footer{
   color:#92400e;
   border-color:rgba(245,158,11,.35);
 }
+
+
+.knockout-confirm-box,
+.bracket-confirm-banner{
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:16px;
+  background:#f8fafc;
+  padding:14px;
+  display:grid;
+  gap:12px;
+}
+
+.knockout-confirm-box.confirmed,
+.bracket-confirm-banner.confirmed{
+  border-color:rgba(202,138,4,.35);
+  background:rgba(202,138,4,.09);
+}
+
+.knockout-confirm-head,
+.bracket-confirm-banner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.knockout-confirm-head span,
+.bracket-confirm-banner span{
+  color:#475569;
+  font-weight:700;
+  font-size:.88rem;
+}
+
+.knockout-confirm-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.knockout-confirm-list{
+  display:grid;
+  gap:8px;
+}
+
+.knockout-confirm-row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  padding:9px 10px;
+  background:#fff;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:12px;
+}
+
+.knockout-confirm-row span{
+  text-align:right;
+  font-weight:700;
+}
+
+@media (max-width: 720px){
+  .knockout-confirm-row{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .knockout-confirm-row span{
+    text-align:left;
+  }
+}
